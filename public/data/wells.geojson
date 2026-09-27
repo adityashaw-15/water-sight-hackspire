@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"id":"WL-02","name":"Observation well 02","watershed":"wb-01","depth":"9.4 m"},"geometry":{"type":"Point","coordinates":[87.075,23.145]}}]}
