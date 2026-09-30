@@ -1,0 +1,355 @@
+{% extends "layout.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="content-width" style="padding-top: 40px; padding-bottom: 80px;">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow"><span /> SATELLITE ACQUISITION</div>
+      <h2>Remote Sensing Analysis Pipeline</h2>
+      <p>Configure satellite parameters for the uploaded field evidence.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+    
+    <!-- Left Column: Field Evidence -->
+    <aside style="background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--line);">
+      <h3 style="margin-bottom: 20px; font-size: 14px; color: var(--muted); letter-spacing: 1px;">FIELD EVIDENCE</h3>
+      
+      {% if img %}
+      <img src="{{ url_for('static', filename='images/' + img) }}" alt="Field Evidence" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;" />
+      {% else %}
+      <div style="width: 100%; height: 200px; background: #f0f0f0; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; color: var(--muted);">No Image</div>
+      {% endif %}
+
+      <div style="font-size: 14px; margin-bottom: 10px;">
+        <strong>Latitude:</strong> {{ lat }}<br/>
+        <strong>Longitude:</strong> {{ lng }}
+      </div>
+      <div style="font-size: 14px; margin-bottom: 20px; padding-top: 10px; border-top: 1px solid var(--line);">
+        <strong>State:</strong> {{ state }}<br/>
+        <strong>District:</strong> {{ district }}<br/>
+        <strong>Watershed:</strong> {{ watershed }}<br/>
+        <strong>Micro-watershed:</strong> Unknown (Pending AOI Generation)
+      </div>
+      
+      <button class="button button-secondary" style="width: 100%;">View on Map</button>
+    </aside>
+
+    <!-- Right Column: Satellite Config -->
+    <div style="background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--line);">
+      <h3 style="margin-bottom: 20px; font-size: 14px; color: var(--muted); letter-spacing: 1px;">SATELLITE CONFIGURATION</h3>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Satellite Source</label>
+          <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <option>Sentinel-2</option>
+            <option>Landsat 8/9</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Processing Level</label>
+          <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <option>Sentinel-2 Level-2A (Surface Reflectance)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 25px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Analysis Period</label>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <input type="date" id="start_date" value="2024-01-01" style="padding: 10px; border-radius: 6px; border: 1px solid var(--line);" />
+          <span>to</span>
+          <input type="date" id="end_date" value="2024-01-31" style="padding: 10px; border-radius: 6px; border: 1px solid var(--line);" />
+        </div>
+      </div>
+
+      <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <label style="display: flex; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 8px; gap: 10px;">
+          <input type="checkbox" checked /> Enable Historical Comparison
+        </label>
+        <div style="display: flex; gap: 15px;">
+          <select style="padding: 8px; border-radius: 6px; border: 1px solid var(--line);">
+            <option>Baseline: 2022</option>
+            <option>Baseline: 2021</option>
+          </select>
+          <select style="padding: 8px; border-radius: 6px; border: 1px solid var(--line);">
+            <option>Current: 2026</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 25px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Maximum Cloud Cover (20%)</label>
+        <input type="range" id="cloud_cover" min="0" max="100" value="50" style="width: 100%;" />
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Spatial Resolution</label>
+          <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <option>10 m</option>
+            <option>20 m</option>
+            <option>60 m</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Composite Method</label>
+          <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <option>Median</option>
+            <option>Best available scene</option>
+            <option>Least cloudy</option>
+            <option>Single scene</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 30px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 12px;">Analysis Layers</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+          <label><input type="checkbox" checked /> True Color</label>
+          <label><input type="checkbox" checked /> False Color</label>
+          <label><input type="checkbox" checked /> NDVI</label>
+          <label><input type="checkbox" checked /> NDWI</label>
+          <label><input type="checkbox" checked /> Water Extent</label>
+          <label><input type="checkbox" checked /> Vegetation Extent</label>
+          <label><input type="checkbox" checked /> Land Use / Land Cover</label>
+          <label><input type="checkbox" checked /> Change Detection</label>
+          <label><input type="checkbox" /> Critical Area Analysis</label>
+        </div>
+      </div>
+
+      <button id="search-satellite-btn" class="button button-primary" style="width: 100%; padding: 15px; font-size: 16px;">SEARCH SATELLITE IMAGERY</button>
+<div id="scene-results"></div>
+
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchBtn = document.getElementById('search-satellite-btn');
+    const resultsDiv = document.getElementById('scene-results');
+    
+    searchBtn.addEventListener('click', async () => {
+        searchBtn.disabled = true;
+        searchBtn.textContent = 'Searching Copernicus Data Space...';
+        resultsDiv.innerHTML = '<div style="text-align:center; padding: 20px;">Searching STAC Catalog...</div>';
+        
+        try {
+            const res = await fetch('/api/satellite/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: {{ lat|default(23.2, true) }},
+                    lng: {{ lng|default(87.5, true) }},
+                    start_date: document.getElementById('start_date').value,
+                    end_date: document.getElementById('end_date').value,
+                    cloud_cover: document.getElementById('cloud_cover').value
+                })
+            });
+            const scenes = await res.json();
+            
+            if(scenes.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 15px; background: #fff3cd; color: #856404; border-radius: 6px;">No scenes found matching your criteria. Try increasing cloud cover or expanding dates.</div>';
+                return;
+            }
+            
+            let html = '<h3 style="margin-top: 30px; font-size: 14px; color: var(--muted); letter-spacing: 1px;">AVAILABLE SCENES</h3>';
+            html += '<div style="display: grid; gap: 15px; margin-top: 15px;">';
+            
+            scenes.forEach(scene => {
+                html += `
+                <div class="scene-card" style="display: flex; gap: 15px; padding: 15px; border: 1px solid var(--line); border-radius: 8px; background: white; align-items: center;">
+                    <div style="width: 100px; height: 100px; background: #f0f0f0; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">
+                        ${scene.thumbnail ? '<img src="' + scene.thumbnail + '" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display=\'none\'; this.parentElement.innerText=\'No Preview\';" />' : 'No Preview'}
+                    </div>
+                    <div style="flex: 1;">
+                        <strong style="display: block; font-size: 14px; margin-bottom: 5px;">${scene.id}</strong>
+                        <div style="font-size: 13px; color: var(--muted); display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                            <span><strong>Satellite:</strong> ${scene.satellite} (${scene.product})</span>
+                            <span><strong>Acquired:</strong> ${scene.acquisition_date.substring(0, 10)}</span>
+                            <span><strong>Cloud Cover:</strong> ${scene.cloud_cover}%</span>
+                            <span><strong>Resolution:</strong> ${scene.resolution_m} m</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="button button-secondary" style="font-size: 12px; padding: 5px 10px;" onclick="previewScene('${scene.id}')">Preview</button>
+                        <button class="button button-primary" style="font-size: 12px; padding: 5px 10px;" onclick="selectScene('${scene.id}')">Select Scene</button>
+                    </div>
+                </div>
+                `;
+            });
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+            
+        } catch(err) {
+            resultsDiv.innerHTML = '<div style="padding: 15px; background: #f8d7da; color: #721c24; border-radius: 6px;">Error connecting to CDSE STAC API.</div>';
+        } finally {
+            searchBtn.disabled = false;
+            searchBtn.textContent = 'SEARCH SATELLITE IMAGERY';
+        }
+    });
+});
+
+function previewScene(id) {
+    alert('Preview mode activated for ' + id + '\n\n(Milestone 2C UI placeholder - Map overlay will render here)');
+}
+
+function selectScene(id) {
+    const resultsDiv = document.getElementById('scene-results');
+    resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center;"><strong>Starting analysis...</strong></div>';
+    
+    fetch('/api/analysis/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scene_id: id, lat: {{ lat|default(23.2, true) }}, lng: {{ lng|default(87.5, true) }} })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.job_id) {
+            pollJob(data.job_id);
+        } else {
+            resultsDiv.innerHTML = '<div style="padding: 15px; background: #f8d7da; color: #721c24;">Failed to start job.</div>';
+        }
+    });
+}
+
+function pollJob(job_id) {
+    const resultsDiv = document.getElementById('scene-results');
+    const interval = setInterval(() => {
+        fetch('/api/analysis/' + job_id + '/status')
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'failed') {
+                clearInterval(interval);
+                resultsDiv.innerHTML = `<div style="padding: 20px; background: #f8d7da; border-radius: 8px; border: 1px solid #f5c6cb;">
+                    <h4 style="color: #721c24; margin-bottom: 10px;">Analysis Failed (Milestone 2E Validation)</h4>
+                    <p style="color: #721c24; font-size: 14px;">${data.error_message}</p>
+                </div>`;
+            } else if (data.status === 'complete') {
+                clearInterval(interval);
+                fetch('/api/analysis/' + job_id + '/results')
+                .then(r => r.json())
+                .then(res => {
+                    resultsDiv.innerHTML = `
+                                                            <div style="padding: 20px; background: white; border-radius: 8px; border: 1px solid var(--line); margin-top: 20px;">
+                        <h4 style="margin-bottom: 15px; color: var(--primary);">ANALYSIS RESULTS</h4>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <!-- LEFT COLUMN: STATS AND CHARTS -->
+                            <div>
+                                <h5 style="border-bottom: 1px solid var(--line); padding-bottom: 5px;">NDVI Statistics</h5>
+                                <p><strong>Min:</strong> ${res.statistics.min}</p>
+                                <p><strong>Max:</strong> ${res.statistics.max}</p>
+                                <p><strong>Mean:</strong> ${res.statistics.mean}</p>
+                                <p><strong>Median:</strong> ${res.statistics.median}</p>
+                                <p><strong>Valid Pixels:</strong> ${res.statistics.valid_pixel_count}</p>
+                                
+                                <h5 style="margin-top: 15px; border-bottom: 1px solid var(--line); padding-bottom: 5px;">NDWI Statistics</h5>
+                                <p><strong>Mean:</strong> ${res.ndwi.mean}</p>
+                                <p><strong>Water Indicator Pixels:</strong> ${res.ndwi.water_pixels}</p>
+                                
+                                <h5 style="margin-top: 15px; border-bottom: 1px solid var(--line); padding-bottom: 5px;">Vegetation Distribution</h5>
+                                <div style="width: 100%; height: 250px;">
+                                    <canvas id="vegChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- RIGHT COLUMN: MAP -->
+                            <div>
+                                <h5 style="border-bottom: 1px solid var(--line); padding-bottom: 5px;">Map Visualization</h5>
+                                <div style="margin-bottom: 10px;">
+                                    <label><input type="radio" name="layerToggle" value="ndvi" checked onclick="toggleLayer('ndvi')"> NDVI</label>
+                                    <label style="margin-left: 10px;"><input type="radio" name="layerToggle" value="ndwi" onclick="toggleLayer('ndwi')"> NDWI (Water Indicator)</label>
+                                </div>
+                                <div id="analysisMap" style="width: 100%; height: 400px; border-radius: 8px; border: 1px solid var(--line); position: relative; z-index: 1;"></div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                    if (!window.Chart) {
+                        const script = document.createElement('script');
+                        script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+                        script.onload = () => renderAnalysis(res);
+                        document.head.appendChild(script);
+                    } else {
+                        renderAnalysis(res);
+                    }
+                });
+            } else {
+                results = `<div style="padding: 20px; background: #e2e3e5; border-radius: 8px;">
+                    <strong>Processing...</strong><br/>
+                    Step: ${data.current_step} <br/>
+                    Progress: ${data.progress}%
+                </div>`;
+                resultsDiv.innerHTML = results;
+            }
+        });
+    }, 1000);
+}
+
+
+let mapInstance = null;
+let ndviOverlay = null;
+let ndwiOverlay = null;
+
+window.toggleLayer = function(layerName) {
+    if (!mapInstance) return;
+    if (layerName === 'ndvi') {
+        if(ndwiOverlay) mapInstance.removeLayer(ndwiOverlay);
+        if(ndviOverlay) ndviOverlay.addTo(mapInstance);
+    } else {
+        if(ndviOverlay) mapInstance.removeLayer(ndviOverlay);
+        if(ndwiOverlay) ndwiOverlay.addTo(mapInstance);
+    }
+};
+
+function renderAnalysis(res) {
+    // 1. Render Chart
+    const ctx = document.getElementById('vegChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Very Low', 'Low', 'Moderate', 'High', 'Very High'],
+            datasets: [{
+                label: '% of Area',
+                data: [
+                    res.vegetation_classes['Very Low'].toFixed(1),
+                    res.vegetation_classes['Low'].toFixed(1),
+                    res.vegetation_classes['Moderate'].toFixed(1),
+                    res.vegetation_classes['High'].toFixed(1),
+                    res.vegetation_classes['Very High'].toFixed(1)
+                ],
+                backgroundColor: [
+                    '#e5f5e0', '#a1d99b', '#74c476', '#31a354', '#006d2c'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // 2. Render Map
+    if (mapInstance) {
+        mapInstance.remove();
+    }
+    
+    // Center map on bounds
+    const bounds = res.bounds; // [[lat_min, lng_min], [lat_max, lng_max]]
+    
+    mapInstance = L.map('analysisMap').fitBounds(bounds);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance);
+    
+    ndviOverlay = L.imageOverlay(res.preview_url, bounds, { opacity: 0.7 }).addTo(mapInstance);
+    ndwiOverlay = L.imageOverlay(res.ndwi_preview_url, bounds, { opacity: 0.7 });
+}
+</script>
+
+{% endblock %}

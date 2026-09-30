@@ -1,1 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102c3b" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <title>{% block title %}WaterSight{% endblock %}</title>
+    <style>
+      .flash-messages {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 400px;
+      }
+      .flash-message {
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .flash-error { background: #fff0f0; color: #d94343; border: 1px solid #fadcdc; }
+      .flash-info { background: #eaf8ef; color: #168a4c; border: 1px solid #cce8d7; }
+      .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: radial-gradient(circle at top left, #1a2b25 0%, #102c3b 100%);
+      }
+      .auth-card {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        z-index: 10;
+      }
+      .auth-card h2 { margin: 0 0 20px 0; color: var(--ink); text-align: center; }
+      .auth-card p.subtitle { text-align: center; color: var(--muted); margin-top: -15px; margin-bottom: 25px; }
+      .form-group { margin-bottom: 15px; }
+      .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+      .form-group input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 8px; outline: none; transition: 0.2s; }
+      .form-group input:focus { border-color: var(--blue); }
+      .btn-primary { width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+      .btn-primary:hover { background: var(--blue-dark); }
+      .auth-divider { display: flex; align-items: center; text-align: center; margin: 25px 0; color: var(--muted); font-size: 12px; }
+      .auth-divider::before, .auth-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
+      .auth-divider:not(:empty)::before { margin-right: .25em; }
+      .auth-divider:not(:empty)::after { margin-left: .25em; }
+      .btn-google { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; background: white; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration: none; }
+      .btn-google:hover { background: #f9f9f9; border-color: #d1dbd6; }
+      .btn-google img { width: 18px; height: 18px; }
+      .auth-footer { text-align: center; margin-top: 25px; font-size: 13px; color: var(--muted); }
+      .auth-footer a { color: var(--blue); text-decoration: none; font-weight: 600; }
+      
+      .main-nav { background: white; padding: 10px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); }
+      .nav-links { display: flex; gap: 20px; align-items: center; }
+      .nav-links a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; }
+      .nav-links a.active { color: var(--blue); }
+      .profile-pic { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    </style>
+  </head>
+  <body>
+    <div class="flash-messages">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
 
+    {% if current_user.is_authenticated %}
+    <nav class="main-nav">
+      <div class="logo"><strong>WATERSIGHT</strong></div>
+      <div class="nav-links">
+        <a href="{{ url_for('dashboard') }}" class="active">Overview</a>
+        <a href="#">Map</a>
+        <a href="#">Change Detection</a>
+        <a href="#">Interventions</a>
+        <a href="#">Reports</a>
+      </div>
+      <div class="nav-links">
+        <a href="{{ url_for('profile') }}">
+          {% if current_user.profile_picture %}
+            <img src="{{ current_user.profile_picture }}" alt="Profile" class="profile-pic" />
+          {% else %}
+            Profile
+          {% endif %}
+        </a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </nav>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+    
+    <!-- Retain existing background animation for auth pages if desired -->
+    <script>
+      // Flash message auto-hide
+      setTimeout(() => {
+        document.querySelectorAll('.flash-message').forEach(el => {
+          el.style.opacity = '0';
+          el.style.transition = 'opacity 0.5s';
+          setTimeout(() => el.remove(), 500);
+        });
+      }, 5000);
+    </script>
+  </body>
+</html>

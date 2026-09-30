@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}WaterSight | Watershed Intelligence{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card" style="max-width: 600px; text-align: center;">
+    <h1 style="font-weight: 800; font-size: 36px; margin-bottom: 20px; color: var(--ink);">WATERSIGHT</h1>
+    <p style="font-size: 18px; color: var(--muted); margin-bottom: 40px;">
+      Advanced geospatial intelligence and change analysis for watershed management.
+    </p>
+    
+    <div style="display: flex; gap: 20px; justify-content: center;">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard') }}" class="btn-primary" style="text-decoration: none; width: auto; padding: 12px 30px;">Go to Dashboard</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn-primary" style="text-decoration: none; width: auto; padding: 12px 30px;">Log in</a>
+        <a href="{{ url_for('register') }}" class="btn-google" style="text-decoration: none; width: auto; padding: 12px 30px;">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
