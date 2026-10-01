@@ -11,8 +11,10 @@ import IndiaWatershedMap from './components/IndiaWatershedMap';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ImageUpload from './components/ImageUpload';
 import DataStatusBadge from './components/DataStatusBadge';
+import WatershedHeroVisual from './components/WatershedHeroVisual';
 
 export default function App() {
+  const [realRegions, setRealRegions] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [layers, setLayers] = useState({ states: true, districts: false, basin: false, subbasin: false, watershed: true, micro: false, villages: true, rivers: true, drainage: true, waterBodies: true, wells: false, interventions: true, fieldImages: true, critical: false });
@@ -20,11 +22,40 @@ export default function App() {
   const [range, setRange] = useState('Last 7 Days');
   const [period, setPeriod] = useState(7);
   const [alertFilter, setAlertFilter] = useState('All');
+  const [monitoringSignals, setMonitoringSignals] = useState([]);
+  const [monitoringSummary, setMonitoringSummary] = useState(null);
+  const [monitoringLoading, setMonitoringLoading] = useState(true);
+  const [monitoringError, setMonitoringError] = useState(false);
+  
+
   
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedProject, setSelectedProject] = useState('');
   const [projectStats, setProjectStats] = useState(null);
+  React.useEffect(() => {
+    setMonitoringLoading(true);
+    setMonitoringError(false);
+    let urlSig = '/api/monitoring-signals';
+    let urlSum = '/api/monitoring-summary';
+    if (selectedProject) {
+       urlSig += '?project_id=' + selectedProject;
+       urlSum += '?project_id=' + selectedProject;
+    }
+    Promise.all([
+      fetch(urlSig).then(r=>r.json()),
+      fetch(urlSum).then(r=>r.json())
+    ]).then(([sigRes, sumRes]) => {
+      if (sigRes.status === 'success') setMonitoringSignals(sigRes.data);
+      else setMonitoringError(true);
+      if (sumRes.status === 'success') setMonitoringSummary(sumRes.data);
+      else setMonitoringError(true);
+      setMonitoringLoading(false);
+    }).catch(() => {
+      setMonitoringError(true);
+      setMonitoringLoading(false);
+    });
+  }, [selectedProject]);
   
   const [availableStates, setAvailableStates] = useState([]);
   const [availableDistricts, setAvailableDistricts] = useState([]);
@@ -35,6 +66,21 @@ export default function App() {
   const [mapReset, setMapReset] = useState({ count: 0, recentEvidence: null });
   const [evidenceStats, setEvidenceStats] = useState({ total: 0, geocoded: 0 });
   
+  
+  const [regionalError, setRegionalError] = useState(false);
+  React.useEffect(() => {
+    fetch('/api/regional-monitoring')
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'success' && data.regions && data.regions.length > 0) {
+          setRealRegions(data.regions);
+        } else {
+          setRegionalError(true);
+        }
+      })
+      .catch(() => setRegionalError(true));
+  }, []);
+
   React.useEffect(() => {
     fetch('/api/evidence').then(r => r.json()).then(data => {
       setEvidenceStats({ total: data.total || 0, geocoded: data.features?.length || 0 });
@@ -111,7 +157,7 @@ export default function App() {
         return r.json();
       })
       .then(res => {
-        setDataStatus(prev => ({ ...prev, dolr: res.dataSource || dataMode }));
+        setDataStatus(prev => ({ ...prev, dolr: 'demo' }));
         setAvailableProjects(res.projects || res.data || []);
       })
       .catch((err) => {
@@ -193,9 +239,9 @@ export default function App() {
     <header className="site-header"><div className="header-inner"><a className="brand" href="#overview" aria-label="WaterSight home"><span className="brand-logo-frame"><img className="brand-logo-image" src="/watersight-logo.png" alt="WaterSight" /></span><span><strong>WaterSight</strong><small>Geospatial Intelligence for Watershed Development</small></span></a><nav className={menuOpen ? 'main-nav nav-open' : 'main-nav'} aria-label="Main navigation">{navigation.map((item) => <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} onClick={() => setMenuOpen(false)}>{item}</a>)}</nav><div className="header-actions">
           {window.CURRENT_USER ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginRight: '15px', fontSize: '13px' }}>
-              <a href="/profile" style={{ color: '#102c3b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
+              <a href="/profile" className="nav-interactive" style={{ color: '#102c3b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', fontSize: '15px' }}>
                 {window.CURRENT_USER.avatar ? (
-                  <img src={window.CURRENT_USER.avatar} alt="Profile" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <img src={window.CURRENT_USER.avatar} alt="Profile" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   <span style={{ background: '#eef7f2', color: '#168a4c', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                     {window.CURRENT_USER.name ? window.CURRENT_USER.name[0].toUpperCase() : 'U'}
@@ -203,22 +249,18 @@ export default function App() {
                 )}
                 <span>{window.CURRENT_USER.name}</span>
               </a>
-              <a href="/logout" style={{ color: '#687d72', textDecoration: 'none', fontWeight: '500' }}>Logout</a>
+              <a href="/logout" className="nav-interactive auth-btn auth-btn-muted" style={{ textDecoration: 'none' }}>Logout</a>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginRight: '15px', fontSize: '13px' }}>
-              <a href="/login" style={{ color: '#102c3b', textDecoration: 'none', fontWeight: '500' }}>Login</a>
-              <a href="/register" style={{ color: '#168a4c', textDecoration: 'none', fontWeight: '500' }}>Register</a>
+              <a href="/login" className="nav-interactive auth-btn auth-btn-primary" style={{ textDecoration: 'none' }}>Login</a>
+              <a href="/register" className="nav-interactive auth-btn auth-btn-accent" style={{ textDecoration: 'none' }}>Register</a>
             </div>
           )}
-<button className="system-button" type="button" onClick={refreshSystem}><span className="live-dot" />{isRefreshing ? 'Refreshing data...' : 'Refresh Data'}</button><button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label="Toggle navigation" title="Toggle navigation">{menuOpen ? <X size={19} /> : <Menu size={20} />}</button></div></div></header>
+<button className="system-button nav-interactive" type="button" onClick={refreshSystem}><span className="live-dot" />{isRefreshing ? 'Refreshing data...' : 'Refresh Data'}</button><button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label="Toggle navigation" title="Toggle navigation">{menuOpen ? <X size={19} /> : <Menu size={20} />}</button></div></div></header>
     <main>
-      <section className="overview-section content-width" id="overview"><div className="intro-row"><div><div className="eyebrow"><span /> WATERSHED INTELLIGENCE</div><h1>See the Watershed. Understand the Change.</h1><p className="intro-copy">A platform combining geo-coded field evidence, satellite observations and GIS layers for Indian watershed development monitoring.</p></div><div className="intro-actions"><button className="button button-secondary" type="button" onClick={() => setShowUploadModal(true)}><Camera size={16} /> Upload Evidence</button><button className="button button-secondary" type="button" onClick={exportCsv}><Download size={16} /> Export data</button><button className="button button-primary" type="button" onClick={refreshSystem}><RefreshCw size={16} className={isRefreshing ? 'spin' : ''} /> Refresh Data</button></div></div>
-      <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
-        <DataStatusBadge status={dataStatus.admin} sourceName="Administrative Geography" error={dataError.admin} />
-        <DataStatusBadge status={dataStatus.dolr} sourceName="DoLR WDC-PMKSY" error={dataError.dolr} />
-        <DataStatusBadge status="official" sourceName="Bhuvan / NRSC" error={null} />
-      </div>
+      <section className="overview-section content-width" id="overview"><div className="intro-row"><div className="hero-anim-wrapper">  <div className="hero-topo-bg"></div>  <div className="eyebrow"><span></span> WATERSHED INTELLIGENCE</div>  <h1>    <span className="hero-scan-line"></span>    See the Watershed. Understand the Change.    <div className="hero-location-pulse"></div>  </h1>  <p className="intro-copy">A platform combining geo-coded field evidence, satellite observations and GIS layers for Indian watershed development monitoring.</p></div><div className="intro-actions"><button className="button button-secondary" type="button" onClick={() => setShowUploadModal(true)}><Camera size={16} /> Upload Evidence</button><button className="button button-secondary" type="button" onClick={exportCsv}><Download size={16} /> Export data</button><button className="button button-primary" type="button" onClick={refreshSystem}><RefreshCw size={16} className={isRefreshing ? 'spin' : ''} /> Refresh Data</button></div></div>
+      <WatershedHeroVisual />
       <div className="metrics-grid"><article className="metric-card"><div className="metric-icon blue"><Droplets size={22} /></div><div><span>Watershed area</span><strong>48.6 km²</strong><small className="up">12 <em>water bodies</em></small></div><Activity className="metric-spark" size={48} /></article><article className="metric-card"><div className="metric-icon red"><AlertTriangle size={22} /></div><div><span>Watershed interventions</span><strong>18</strong><small className="up">11 <em>completed</em></small></div><BellRing className="metric-spark red-stroke" size={45} /></article><article className="metric-card"><div className="metric-icon teal"><MapPin size={22} /></div><div><span>Geo-coded images</span><strong>24</strong><small className="neutral">6 <em>villages</em></small></div><Globe2 className="metric-spark" size={48} /></article></div></section>
       <section className="map-section" id="map"><div className="content-width"><div className="section-heading map-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED EXPLORER</div><h2>India-focused watershed GIS</h2><p>Select a watershed to inspect its local evidence, drainage and interventions.</p></div><div className="map-update"><span className="live-dot" /> {notice}</div></div><div className="watershed-selectors">
         <label>Country<select value="India" disabled><option>India</option></select></label>
@@ -250,8 +292,150 @@ export default function App() {
   </div>
 )}
 </div></section>
-      <section className="content-width intelligence-section" id="alerts"><div className="alerts-layout"><div className="alerts-column"><div className="section-heading compact"><div><div className="eyebrow"><span /> WATERSHED ATTENTION SIGNALS · DEMO DATA</div><h2>Prototype attention signals</h2></div><button className="icon-button" type="button" title="Alert settings" aria-label="Alert settings"><MoreHorizontal size={19} /></button></div><div className="filter-group">{['All', 'High', 'Medium', 'Low'].map((filter) => <button key={filter} type="button" onClick={() => setAlertFilter(filter)} className={alertFilter === filter ? 'filter active' : 'filter'}>{filter}{filter === 'All' ? ` (${alerts.length})` : ''}</button>)}</div><div className="alert-list">{visibleAlerts.map((alert) => <article className="alert-card" key={alert.id}><div className={`severity-bar ${alert.severity.toLowerCase()}`} /><div className="alert-content"><div className="alert-meta"><span className={`badge ${alert.severity.toLowerCase()}`}>{alert.severity}</span><time>{alert.time}</time></div><h3>{alert.title}</h3><p>{alert.description}</p><div className="alert-footer"><span><MapPin size={14} /> {alert.location}</span><strong>Analysis: {alert.confidence}</strong></div></div><button className="icon-button alert-go" type="button" onClick={() => viewRegion(alert.region)} title="View on map" aria-label={`View ${alert.region} on map`}><Navigation size={17} /></button></article>)}</div></div><aside className="trend-panel" id="history"><div className="trend-top"><div><span className="card-kicker">PROTOTYPE WATERSHED INDICATOR</span><h3>Water-area trend</h3></div><button className="icon-button" type="button" title="Expand chart" aria-label="Expand chart"><Expand size={17} /></button></div><div className="trend-value"><strong>+3.2%</strong><span>demo water area variation<br />against baseline</span></div><div className="period-tabs">{[7, 30, 90].map((value) => <button key={value} type="button" className={period === value ? 'active' : ''} onClick={() => setPeriod(value)}>{value}D</button>)}</div><div className="chart-wrap"><div className="chart-grid"><span>70</span><span>50</span><span>30</span><span>10</span></div><svg viewBox="0 0 300 112" aria-label="Prototype water area trend chart" role="img"><polyline className="chart-shadow" points={points} /><polyline className="chart-line" points={points} /><circle cx={points.split(' ').at(-1).split(',')[0]} cy={points.split(' ').at(-1).split(',')[1]} r="4" className="chart-point" /></svg></div><div className="chart-labels"><span>{period === 7 ? 'Reference' : `${period} days ago`}</span><span>Demo snapshot</span></div><div className="trend-insight"><Gauge size={17} /><span><strong>Prototype indicator only</strong> · field verification remains essential</span></div></aside></div></section>
-      <section className="regions-section"><div className="content-width"><div className="section-heading"><div><div className="eyebrow"><span /> PRIORITY COVERAGE</div><h2>Regional monitoring</h2><p>Focused observation areas with the most recent water conditions.</p></div><button className="button button-secondary" type="button" onClick={() => flash('All 24 monitored regions are in view')}><Globe2 size={16} /> View all regions</button></div><div className="region-grid">{regions.map((region) => <article className="region-card" key={region.name}><div className={`mini-map ${region.map}`}><span className="mini-river" /><span className="mini-water" /><span className="mini-marker" /></div><div className="region-card-body"><div className="region-title"><div><h3>{region.name}</h3><p>{region.country}</p></div>{region.alerts > 0 && <span className="region-alert"><AlertTriangle size={13} /> {region.alerts}</span>}</div><div className="region-stats"><div><span>Water area</span><strong>{region.water}</strong></div><div><span>Trend</span><strong className={region.tone === 'red' ? 'red-text' : 'blue-text'}>{region.delta}</strong></div></div><button className="text-button" type="button" onClick={() => viewRegion(region.name)}>{region.trend} conditions <Navigation size={15} /></button></div></article>)}</div>
+      <section className="content-width intelligence-section" id="alerts">
+        <div className="alerts-layout">
+          <div className="alerts-column">
+            <div className="section-heading compact">
+              <div>
+                <div className="eyebrow"><span /> OFFICIAL SOURCE DATA</div>
+                <h2>Watershed Monitoring Signals</h2>
+              </div>
+            </div>
+            
+            <div className="alert-list">
+              {monitoringLoading ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>Loading official monitoring data...</div>
+              ) : monitoringError ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f' }}>Official monitoring data is temporarily unavailable.</div>
+              ) : monitoringSignals.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>No recent official implementation records available for this selection.</div>
+              ) : (
+                monitoringSignals.map((signal) => (
+                  <article className="alert-card" key={signal.id}>
+                    <div className="severity-bar info" style={{ backgroundColor: '#168a4c' }} />
+                    <div className="alert-content">
+                      <div className="alert-meta">
+                        <span className="badge info" style={{ backgroundColor: '#eef7f2', color: '#168a4c' }}>{signal.source}</span>
+                        <time>{signal.time}</time>
+                      </div>
+                      <h3 style={{ textTransform: 'capitalize' }}>{signal.title}</h3>
+                      <p>{signal.description}</p>
+                      <div className="alert-footer">
+                        <span><MapPin size={14} /> {signal.location}</span>
+                        <strong style={{ color: '#168a4c' }}>Status: {signal.confidence}</strong>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </div>
+          
+          <aside className="trend-panel" id="history">
+            <div className="trend-top">
+              <div>
+                <span className="card-kicker">OFFICIAL PROJECT MONITORING</span>
+                <h3>{monitoringSummary?.project_name || 'Monitoring Overview'}</h3>
+              </div>
+            </div>
+            {monitoringLoading ? (
+               <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>Loading...</div>
+            ) : monitoringError ? (
+               <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f' }}>Data unavailable.</div>
+            ) : monitoringSummary ? (
+              <>
+                <div className="trend-value">
+                  <strong>{monitoringSummary.total_geotags}</strong>
+                  <span style={{ marginTop: '8px' }}>official implementation<br />records geotagged</span>
+                </div>
+                
+                <div style={{ padding: '24px 20px' }}>
+                  <h4 style={{ fontSize: '11px', color: '#6b7c73', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Implementation Activities</h4>
+                  {monitoringSummary.activities.map((act, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5edf1', fontSize: '13px' }}>
+                      <span style={{ color: '#112c3b', fontWeight: '500', textTransform: 'capitalize' }}>{act.name}</span>
+                      <span style={{ color: '#168a4c', fontWeight: '700' }}>{act.count}</span>
+                    </div>
+                  ))}
+                  {monitoringSummary.activities.length === 0 && <div style={{ fontSize: '12px', color: '#6b7c73' }}>No activities recorded.</div>}
+                </div>
+                
+                <div className="trend-insight" style={{ marginTop: 'auto', borderTop: '1px solid #e5edf1', padding: '16px 20px', background: '#f8faf9', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
+                  <ShieldCheck size={17} style={{ color: '#168a4c', marginTop: '2px' }} />
+                  <span style={{ color: '#526f5c' }}><strong style={{ color: '#112c3b' }}>Official Source</strong> &middot; Retrieved directly from WDC-PMKSY 2.0 implementation data.</span>
+                </div>
+              </>
+            ) : null}
+          </aside>
+        </div>
+      </section>
+      <section className="regions-section"><div className="content-width"><div className="section-heading"><div><div className="eyebrow"><span /> PRIORITY COVERAGE</div><h2>Regional monitoring</h2><p>Focused observation areas with the most recent water conditions.</p></div><button className="button button-secondary" type="button" onClick={() => { document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); flash('Navigating to India Watershed Explorer'); }}><Globe2 size={16} /> View all regions</button></div>{regionalError ? (
+  <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f', background: '#fff0f0', borderRadius: '8px', border: '1px solid #fad2d2', gridColumn: '1 / -1' }}>
+    Official regional project data is temporarily unavailable. <button onClick={() => window.location.reload()} style={{ marginLeft: '10px', padding: '4px 8px', background: '#fff', border: '1px solid #fad2d2', borderRadius: '4px', cursor: 'pointer' }}>Retry</button>
+  </div>
+) : (
+<div className="region-grid">
+  {realRegions.map((region) => (
+    <article className="region-card" key={region.official_id}>
+      <div className="mini-map" style={{ backgroundColor: '#e5edf1', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#6b7c73', fontSize: '11px', padding: '10px', position: 'relative' }}>
+        {region.photos && region.photos.length > 0 ? (
+          <img 
+            src={region.photos[0].url} 
+            alt={region.project_name || "Official project"} 
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 10 }} 
+          />
+        ) : (
+          <span style={{ zIndex: 10, position: 'relative' }}>Official photo unavailable</span>
+        )}
+      </div>
+      <div className="region-card-body">
+        <div className="region-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div>
+            <h3 style={{ fontSize: '14px', lineHeight: '1.3', marginBottom: '4px' }}>{region.project_name}</h3>
+            <p>{region.district}, {region.state}</p>
+          </div>
+          <span className="region-alert" style={{ background: '#eef7f2', color: '#168a4c', border: '1px solid #d8e8df', marginTop: '6px' }}>
+            <ShieldCheck size={13} /> Official WDC-PMKSY
+          </span>
+        </div>
+        
+        <div className="region-stats" style={{ marginTop: '15px' }}>
+          <div>
+            <span>Intervention</span>
+            <strong style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px', display: 'block' }}>{region.work_name || 'Watershed Work'}</strong>
+          </div>
+          <div>
+            <span>Verified Photos</span>
+            <strong className="blue-text">{region.photos?.length || 0}</strong>
+          </div>
+        </div>
+        
+        <button className="text-button" type="button" onClick={() => {
+          document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          fetch('/api/states?mode=official').then(r=>r.json()).then(res => {
+            const state = res.data.find(s => s.name === region.state);
+            if (state) {
+              setSelectedState(state.id);
+              setTimeout(() => {
+                fetch(`/api/states/${state.id}/districts?mode=official`).then(r=>r.json()).then(dRes => {
+                  const dist = dRes.data.find(d => d.name === region.district);
+                  if (dist) {
+                    setSelectedDistrict(dist.id);
+                    setTimeout(() => setSelectedProject(region.official_id), 500);
+                  }
+                });
+              }, 500);
+            }
+          });
+          flash(`Flying to official project: ${region.project_name}`);
+        }}>
+          View official project <Navigation size={15} />
+        </button>
+      </div>
+    </article>
+  ))}
+</div>
+)}
 {selectedProject && projectStats && projectStats.features === 0 && (
   <div style={{ padding: '10px', background: '#fff3cd', color: '#856404', borderRadius: '4px', fontSize: '12px', marginTop: '10px', border: '1px solid #ffeeba' }}>
     Official WDC-PMKSY project found, but no verified geotagged locations are currently available.
@@ -259,7 +443,12 @@ export default function App() {
 )}
 </div></section>
       <AnalyticsDashboard />
-      <section className="content-width data-section" id="data-sources"><div className="section-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED DATA NETWORK</div><h2>Data sources</h2><p>Transparent source status for the Watersight prototype and future official integrations.</p></div><button className="button button-secondary" type="button" onClick={() => flash('Data-source readiness report is available')}><Search size={16} /> View source health</button></div><div className="source-table-wrap"><table className="source-table"><thead><tr><th>Source</th><th>Purpose</th><th>Refresh</th><th>Coverage</th><th>Status</th></tr></thead><tbody>{sources.map(([source, detail, refresh, coverage, status]) => <tr key={source}><td><span className="source-icon"><Satellite size={16} /></span><strong>{source}</strong></td><td>{detail}</td><td>{refresh}</td><td>{coverage}</td><td><span className="source-status"><i /> {status}</span></td></tr>)}</tbody></table></div></section>
+      <section className="content-width data-section" id="data-sources"><div className="section-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED DATA NETWORK</div><h2>Data sources</h2><p>Transparent source status for the Watersight prototype and future official integrations.</p></div><button className="button button-secondary" type="button" onClick={() => flash('Data-source readiness report is available')}><Search size={16} /> View source health</button></div><div className="status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+        <DataStatusBadge status={dataStatus.admin} sourceName="Administrative Geography" error={dataError.admin} />
+        <DataStatusBadge status={dataStatus.dolr} sourceName="DoLR WDC-PMKSY" error={dataError.dolr} />
+        <DataStatusBadge status="official" sourceName="Bhuvan / NRSC" error={null} />
+      </div>
+      <div className="source-table-wrap"><table className="source-table"><thead><tr><th>Source</th><th>Purpose</th><th>Refresh</th><th>Coverage</th><th>Status</th></tr></thead><tbody>{sources.map(([source, detail, refresh, coverage, status]) => <tr key={source}><td><span className="source-icon"><Satellite size={16} /></span><strong>{source}</strong></td><td>{detail}</td><td>{refresh}</td><td>{coverage}</td><td><span className="source-status"><i /> {status}</span></td></tr>)}</tbody></table></div></section>
       
       {showUploadModal && (
         <ImageUpload 
@@ -272,6 +461,6 @@ export default function App() {
         />
       )}
     </main>
-    <footer className="site-footer"><div className="content-width footer-inner"><div><a className="brand footer-brand" href="#overview"><span className="brand-logo-frame footer-logo-frame"><img className="brand-logo-image" src="/watersight-logo.png" alt="WaterSight" /></span><strong>WaterSight</strong></a><p>Geospatial intelligence for watershed development and evidence-led planning.</p></div><div className="footer-links"><a href="#overview">About</a><a href="#map">Methodology</a><a href="#data-sources">Data policy</a><a href="#data-sources">Integration</a></div><small>Problem Statement 26015 · Ministry of Rural Development · Department of Land Resources. Prototype data only: this application does not claim official SRISHTI or WDC-PMKSY live access.</small></div></footer>
+    <footer className="site-footer"><div className="content-width footer-inner"><div><a className="brand footer-brand" href="#overview"><span className="brand-logo-frame footer-logo-frame"><img className="brand-logo-image" src="/watersight-logo.png" alt="WaterSight" /></span><strong>WaterSight</strong></a><p>Geospatial intelligence for watershed development and evidence-led planning.</p></div><div className="footer-links"><a href="#overview">About</a><a href="#map">Methodology</a><a href="#data-sources">Data policy</a><a href="#data-sources">Integration</a></div></div></footer>
   </div>;
 }

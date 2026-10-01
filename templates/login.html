@@ -3,6 +3,150 @@
 
 {% block content %}
 <div class="auth-container">
+  <!-- PREMIUM GEOSPATIAL BACKGROUND ANIMATION -->
+  <div class="geospatial-bg" style="position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 80% 30%, #153a3a 0%, #0a171d 100%); z-index: 0;">
+    <style>
+      .auth-card { z-index: 10; position: relative; }
+      .geo-earth-map { animation: earthSpin 150s linear infinite; }
+      .geo-orbit { animation: orbit 45s linear infinite; transform-origin: 1150px 300px; }
+      .geo-scan { animation: scanSweep 12s ease-in-out infinite; transform-origin: 1150px 300px; mix-blend-mode: overlay; }
+      .geo-topo { animation: topoDrift 30s linear infinite; }
+      .geo-flow { animation: flow 3s linear infinite; }
+      .geo-pulse { animation: pulse 4s infinite; }
+      
+      @keyframes earthSpin {
+        from { transform: translateX(0); }
+        to { transform: translateX(-1000px); }
+      }
+      @keyframes orbit {
+        0% { transform: rotate(0deg) translateX(320px) rotate(0deg); }
+        100% { transform: rotate(360deg) translateX(320px) rotate(-360deg); }
+      }
+      @keyframes scanSweep {
+        0%, 100% { opacity: 0; transform: rotate(120deg); }
+        10% { opacity: 0; }
+        30% { opacity: 0.15; }
+        70% { opacity: 0.15; transform: rotate(220deg); }
+        90% { opacity: 0; }
+      }
+      @keyframes topoDrift {
+        from { stroke-dashoffset: 200; }
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes flow {
+        from { stroke-dashoffset: 40; }
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.3; r: 2; }
+        50% { opacity: 1; r: 4.5; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .geo-earth-map, .geo-orbit, .geo-scan, .geo-topo, .geo-flow, .geo-pulse { animation: none !important; }
+      }
+    </style>
+    
+    <svg viewBox="0 0 1440 900" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; opacity: 0.85;">
+      <defs>
+        <clipPath id="earthClip">
+          <circle cx="1150" cy="300" r="220" />
+        </clipPath>
+        <radialGradient id="earthAtmosphere" cx="50%" cy="50%" r="50%">
+          <stop offset="70%" stop-color="#235c52" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#0a171d" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="scanGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#34d399" stop-opacity="0"/>
+          <stop offset="50%" stop-color="#34d399" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <!-- LAYER 2: Topographic Lines (Left & Bottom) -->
+      <g stroke="#1b3a33" stroke-width="1.5" fill="none" opacity="0.6">
+        <path class="geo-topo" style="stroke-dasharray: 10 30;" d="M -100,200 Q 200,300 100,600 T 400,1000" />
+        <path class="geo-topo" style="animation-direction: reverse; stroke-dasharray: 15 40;" d="M -50,150 Q 250,250 150,550 T 500,950" />
+        <path class="geo-topo" style="stroke-dasharray: 5 20; animation-duration: 40s;" d="M 0,100 Q 300,200 200,500 T 600,900" />
+        <!-- Additional contour detail -->
+        <path d="M -100,300 Q 150,400 50,700 T 300,1100" stroke="#122b26" stroke-width="1" />
+      </g>
+
+      <!-- LAYER 3: Earth -->
+      <!-- Atmosphere -->
+      <circle cx="1150" cy="300" r="280" fill="url(#earthAtmosphere)" />
+      <!-- Base Ocean -->
+      <circle cx="1150" cy="300" r="220" fill="#0d2420" />
+      
+      <!-- Coordinate Grid on Earth -->
+      <g stroke="#16382f" stroke-width="1" fill="none" clip-path="url(#earthClip)">
+        <ellipse cx="1150" cy="300" rx="220" ry="220" />
+        <ellipse cx="1150" cy="300" rx="110" ry="220" />
+        <ellipse cx="1150" cy="300" rx="55" ry="220" />
+        <line x1="930" y1="300" x2="1370" y2="300" />
+        <line x1="930" y1="190" x2="1370" y2="190" />
+        <line x1="930" y1="410" x2="1370" y2="410" />
+      </g>
+
+      <!-- Continents Pattern (Repeated for infinite scroll) -->
+      <g clip-path="url(#earthClip)">
+        <g class="geo-earth-map">
+          <!-- Continent Blobs -->
+          <path d="M 1050,200 Q 1100,180 1150,220 T 1120,320 T 1020,280 Z" fill="#1b4237" opacity="0.8" />
+          <path d="M 1250,120 Q 1300,100 1350,150 T 1320,250 T 1200,200 Z" fill="#1b4237" opacity="0.6" />
+          <path d="M 900,350 Q 950,300 1000,380 T 950,450 T 850,400 Z" fill="#1b4237" opacity="0.7" />
+          
+          <!-- Duplicate for looping -->
+          <path d="M 2050,200 Q 2100,180 2150,220 T 2120,320 T 2020,280 Z" fill="#1b4237" opacity="0.8" />
+          <path d="M 2250,120 Q 2300,100 2350,150 T 2320,250 T 2200,200 Z" fill="#1b4237" opacity="0.6" />
+          <path d="M 1900,350 Q 1950,300 2000,380 T 1950,450 T 1850,400 Z" fill="#1b4237" opacity="0.7" />
+        </g>
+      </g>
+      
+      <!-- Earth Rim Shadow (3D depth) -->
+      <circle cx="1150" cy="300" r="220" fill="none" stroke="#2c5c52" stroke-width="1.5" opacity="0.4" />
+      <!-- Inner shadow for spherical illusion -->
+      <circle cx="1150" cy="300" r="220" fill="none" stroke="#061210" stroke-width="60" opacity="0.6" style="transform: translate(-20px, 20px);" clip-path="url(#earthClip)" />
+
+      <!-- LAYER 4: Satellite Orbit -->
+      <ellipse cx="1150" cy="300" rx="320" ry="120" fill="none" stroke="#1d4239" stroke-width="1" stroke-dasharray="4 12" transform="rotate(-15 1150 300)" opacity="0.6" />
+      <g class="geo-orbit">
+        <!-- Satellite Sprite -->
+        <rect x="1147" y="297" width="6" height="6" fill="#47cf83" />
+        <rect x="1140" y="299" width="6" height="2" fill="#2c5c52" />
+        <rect x="1154" y="299" width="6" height="2" fill="#2c5c52" />
+        <!-- Scan Beam -->
+        <polygon class="geo-scan" points="1150,300 950,900 1350,900" fill="url(#scanGrad)" />
+      </g>
+
+      <!-- LAYER 6: Watershed Drainage (Bottom Left) -->
+      <g fill="none" stroke="#1d4239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5">
+        <!-- Main River -->
+        <path d="M 150,700 Q 200,750 250,800 T 400,850" />
+        <!-- Tributaries -->
+        <path d="M 100,650 Q 150,700 250,800" />
+        <path d="M 280,720 Q 260,760 275,810" />
+        
+        <!-- Animated Water Flow Particles -->
+        <path class="geo-flow" style="stroke-dasharray: 4 60; stroke: #47cf83; stroke-width: 2.5;" d="M 150,700 Q 200,750 250,800 T 400,850" />
+        <path class="geo-flow" style="animation-duration: 4s; stroke-dasharray: 3 50; stroke: #34d399; stroke-width: 1.5; animation-delay: 1s;" d="M 100,650 Q 150,700 250,800" />
+      </g>
+
+      <!-- LAYER 7: Geospatial Nodes -->
+      <g fill="#47cf83" opacity="0.8">
+        <circle cx="250" cy="800" r="3" class="geo-pulse" />
+        <circle cx="275" cy="810" r="2.5" class="geo-pulse" style="animation-delay: 1.5s;" />
+        <circle cx="150" cy="700" r="2" class="geo-pulse" style="animation-delay: 0.5s;" />
+        <circle cx="400" cy="850" r="3.5" class="geo-pulse" style="animation-delay: 2.5s;" />
+      </g>
+      
+      <!-- Coordinate Details (Decorative) -->
+      <text x="40" y="50" fill="#2c5c52" font-size="11" font-family="monospace" letter-spacing="1.5">LAT 20.5937° N</text>
+      <text x="40" y="70" fill="#2c5c52" font-size="11" font-family="monospace" letter-spacing="1.5">LON 78.9629° E</text>
+      <text x="40" y="90" fill="#1b3a33" font-size="10" font-family="monospace" letter-spacing="1">SAT_LINK: ACTIVE</text>
+      <text x="40" y="110" fill="#1b3a33" font-size="10" font-family="monospace" letter-spacing="1">ORBIT: POLAR_SYNC</text>
+
+    </svg>
+  </div>
   <div class="auth-card">
     <div style="text-align: center; margin-bottom: 20px;">
       <h2 style="font-weight: 800; font-size: 24px;">WATERSIGHT</h2>
@@ -39,5 +183,129 @@
       Don't have an account? <a href="{{ url_for('register') }}">Create account</a>
     </div>
   </div>
+
+  <!-- ENVIRONMENTAL SOUND CONTROL -->
+  <button id="bg-audio-toggle" class="audio-toggle" aria-label="Turn sound on" title="Turn sound on">🔇</button>
+  <style>
+    .audio-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(16, 44, 59, 0.85);
+      border: 1px solid #235c52;
+      color: #47cf83;
+      font-size: 20px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(4px);
+    }
+    .audio-toggle:hover {
+      background: rgba(26, 71, 59, 0.95);
+      transform: scale(1.05);
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggleBtn = document.getElementById('bg-audio-toggle');
+      let isPlaying = false;
+      let audioCtx = null;
+      let masterGain = null;
+
+      function initAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0;
+        masterGain.connect(audioCtx.destination);
+
+        // Rain / Stream
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let lastOut = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          let white = Math.random() * 2 - 1;
+          data[i] = (lastOut + (0.02 * white)) / 1.02;
+          lastOut = data[i];
+          data[i] *= 3.5;
+        }
+        const noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = buffer;
+        noiseSource.loop = true;
+        
+        const lowpass = audioCtx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = 800;
+        noiseSource.connect(lowpass);
+        lowpass.connect(masterGain);
+        noiseSource.start();
+
+        // Wind
+        const windSource = audioCtx.createBufferSource();
+        windSource.buffer = buffer;
+        windSource.loop = true;
+        const bandpass = audioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 300;
+        bandpass.Q.value = 0.5;
+
+        const lfo = audioCtx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.1;
+        const lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 200;
+        lfo.connect(lfoGain);
+        lfoGain.connect(bandpass.frequency);
+        lfo.start();
+
+        const windGain = audioCtx.createGain();
+        windGain.gain.value = 0.4;
+        windSource.connect(bandpass);
+        bandpass.connect(windGain);
+        windGain.connect(masterGain);
+        windSource.start();
+      }
+
+      function toggleAudio() {
+        if (!audioCtx) initAudio();
+        
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        isPlaying = !isPlaying;
+        sessionStorage.setItem('watersight_audio_login', isPlaying ? 'true' : 'false');
+
+        if (isPlaying) {
+          masterGain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 1.0);
+          toggleBtn.textContent = '🔊';
+          toggleBtn.title = 'Mute sound';
+          toggleBtn.setAttribute('aria-label', 'Mute sound');
+        } else {
+          masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+          toggleBtn.textContent = '🔇';
+          toggleBtn.title = 'Turn sound on';
+          toggleBtn.setAttribute('aria-label', 'Turn sound on');
+        }
+      }
+
+      toggleBtn.addEventListener('click', toggleAudio);
+
+      // Restore session state safely
+      if (sessionStorage.getItem('watersight_audio_login') === 'true') {
+        const startOnInteraction = () => {
+          if (!isPlaying) toggleAudio();
+          document.removeEventListener('click', startOnInteraction);
+        };
+        document.addEventListener('click', startOnInteraction);
+      }
+    });
+  </script>
 </div>
 {% endblock %}

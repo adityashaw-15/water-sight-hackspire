@@ -112,22 +112,68 @@ def create_aoi(lat, lon, radius_m=500):
 
 def get_stac_assets(scene_id):
     catalog = Client.open('https://planetarycomputer.microsoft.com/api/stac/v1', modifier=pc.sign_inplace)
-    import re
-    pc_scene_id = re.sub(r'_N\d{4}_', '_', scene_id)
-    search = catalog.search(collections=['sentinel-2-l2a'], ids=[pc_scene_id])
-    items = list(search.items())
-    if not items:
-        raise Exception(f"Scene {pc_scene_id} not found in raster store.")
     
-    item = items[0]
-    return {
-        'B03': item.assets['B03'].href, # Green
-        'B04': item.assets['B04'].href, # Red
-        'B08': item.assets['B08'].href, # NIR
-        'SCL': item.assets['SCL'].href if 'SCL' in item.assets else None,
-        'acquisition_date': item.datetime.isoformat() if item.datetime else None,
-        'cloud_cover': item.properties.get('eo:cloud_cover')
-    }
+    if scene_id.startswith('LC08') or scene_id.startswith('LC09'):
+        search = catalog.search(collections=['landsat-c2-l2'], ids=[scene_id])
+        items = list(search.items())
+        if not items:
+            raise Exception(f"Landsat Scene {scene_id} not found in raster store.")
+        item = items[0]
+        return {
+            'B03': item.assets['green'].href,
+            'B04': item.assets['red'].href,
+            'B08': item.assets['nir08'].href,
+            'SCL': item.assets['qa_pixel'].href,
+            'acquisition_date': item.datetime.isoformat() if item.datetime else None,
+            'cloud_cover': item.properties.get('eo:cloud_cover'),
+            'is_landsat': True
+        }
+    else:
+        import re
+        pc_scene_id = re.sub(r'_N\d{4}_', '_', scene_id)
+        
+        # Try exact match first
+        search = catalog.search(collections=['sentinel-2-l2a'], ids=[pc_scene_id])
+        items = list(search.items())
+        
+        # If not found, try flexible match by Date and Tile
+        if not items:
+            parts = scene_id.split('_')
+            if len(parts) >= 5 and parts[0] in ('S2A', 'S2B'):
+                date_str = parts[2][:8]
+                scene_datatake = parts[2]
+                datetime_range = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T00:00:00Z/{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T23:59:59Z"
+                tile = None
+                for part in parts:
+                    if part.startswith('T') and len(part) == 6:
+                        tile = part[1:]
+                        break
+                
+                if tile:
+                    search_flex = catalog.search(
+                        collections=['sentinel-2-l2a'],
+                        datetime=datetime_range,
+                        query={'s2:mgrs_tile': {'eq': tile}}
+                    )
+                    flex_items = list(search_flex.items())
+                    for f_item in flex_items:
+                        if scene_datatake in f_item.id:
+                            items = [f_item]
+                            break
+
+        if not items:
+            raise Exception(f"Scene {scene_id} not found in raster store.")
+        
+        item = items[0]
+        return {
+            'B03': item.assets['B03'].href, # Green
+            'B04': item.assets['B04'].href, # Red
+            'B08': item.assets['B08'].href, # NIR
+            'SCL': item.assets['SCL'].href if 'SCL' in item.assets else None,
+            'acquisition_date': item.datetime.isoformat() if item.datetime else None,
+            'cloud_cover': item.properties.get('eo:cloud_cover'),
+            'is_landsat': False
+        }
 
 def process_band(band_url, aoi_wgs84_polygon, target_crs=None, target_res=20, is_mask=False):
     with rasterio.open(band_url) as src:
@@ -190,12 +236,20 @@ def run_satellite_analysis(scene_id, lat, lon, job_id, update_progress):
         update_progress(50, 'Downloading and Resampling NIR band to 20m')
         nir_array, _ = process_band(assets['B08'], aoi_polygon, target_crs=utm_crs, target_res=20)
         
-        update_progress(60, 'Processing Cloud Mask (SCL)')
+        update_progress(60, 'Processing Cloud Mask')
         if assets['SCL']:
             scl_array, _ = process_band(assets['SCL'], aoi_polygon, target_crs=utm_crs, target_res=20, is_mask=True)
-            # SCL Classes: 0: NoData, 1: Saturated, 2: Dark, 3: CloudShadow, 8: CloudMedium, 9: CloudHigh, 10: Cirrus, 11: Snow
-            invalid_classes = [0, 1, 3, 8, 9, 10, 11]
-            valid_mask = ~np.isin(scl_array, invalid_classes)
+            if assets.get('is_landsat'):
+                # Landsat qa_pixel bitmask. Bit 1: dilated cloud, Bit 3: cloud, Bit 4: cloud shadow
+                # We do a simple fallback valid mask based on valid data bits (0 is nodata)
+                valid_mask = (scl_array > 0)
+                # Quick bitwise check for clouds (bit 3) and shadow (bit 4).
+                valid_mask &= ~((scl_array & (1 << 3)) > 0)
+                valid_mask &= ~((scl_array & (1 << 4)) > 0)
+            else:
+                # Sentinel-2 SCL Classes
+                invalid_classes = [0, 1, 3, 8, 9, 10, 11]
+                valid_mask = ~np.isin(scl_array, invalid_classes)
         else:
             valid_mask = np.ones(red_array.shape, dtype=bool)
             scl_array = np.zeros(red_array.shape, dtype=np.uint8)

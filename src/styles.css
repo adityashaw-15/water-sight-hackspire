@@ -151,3 +151,215 @@ main,.site-footer { position:relative; z-index:1; }
 .field-evidence-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px 0; font-size: 16px; }
 .field-evidence-section p { margin: 0; color: var(--muted); }
 
+
+
+/* Navbar Micro UI Enhancement */
+.main-nav a,
+.system-button,
+.nav-interactive,
+.nav-links a {
+  display: inline-block;
+  transition: transform 220ms ease-out, color 0.18s, background 0.18s, border-color 0.18s !important;
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .main-nav a:hover,
+  .system-button:hover,
+  .nav-interactive:hover,
+  .nav-links a:hover {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-nav a:hover,
+  .system-button:hover,
+  .nav-interactive:hover,
+  .nav-links a:hover {
+    transform: none !important;
+  }
+}
+
+.auth-btn {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  padding: 10px 18px;
+  margin: -10px -8px;
+  border-radius: 6px;
+}
+.auth-btn-primary { color: #102c3b !important; }
+.auth-btn-accent { color: #168a4c !important; }
+.auth-btn-muted { color: #687d72 !important; }
+
+
+/* --- PREMIUM HERO ANIMATION --- */
+
+.hero-anim-wrapper {
+  position: relative;
+}
+
+/* Eyebrow Animation */
+.hero-anim-wrapper .eyebrow {
+  opacity: 0;
+  animation: heroFadeIn 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation-delay: 0.1s;
+}
+
+/* The small green line */
+.hero-anim-wrapper .eyebrow span {
+  width: 0;
+  animation: heroLineExtend 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+  position: relative;
+  overflow: visible;
+}
+.hero-anim-wrapper .eyebrow span::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #39e58b;
+  opacity: 0;
+  box-shadow: 0 0 8px #39e58b;
+  animation: heroLinePulse 2s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation-delay: 0.8s;
+}
+
+/* Headline Reveal */
+.hero-anim-wrapper h1 {
+  position: relative;
+  opacity: 0;
+  filter: blur(8px);
+  animation: heroHeadlineReveal 1.2s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation-delay: 0.4s;
+  display: inline-block;
+  overflow: hidden; /* keep scan line contained if desired, but wait! if overflow is hidden, the pulse might be cut off. let's just make sure scan line is contained by h1 */
+}
+
+/* Geospatial Scan Highlights */
+.hero-scan-line {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  height: 120%;
+  width: 8px;
+  background: linear-gradient(to right, transparent, rgba(36, 185, 111, 0.4), rgba(57, 229, 139, 0.8), rgba(36, 185, 111, 0.4), transparent);
+  box-shadow: 0 0 20px rgba(57, 229, 139, 0.6);
+  opacity: 0;
+  transform: translateX(-50px) skewX(-20deg);
+  animation: heroScan 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 1.0s;
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: color-dodge;
+}
+
+/* Location Pulse */
+.hero-location-pulse {
+  position: absolute;
+  top: 10px;
+  right: -30px;
+  width: 6px;
+  height: 6px;
+  background-color: #168a4c;
+  border-radius: 50%;
+  opacity: 0;
+  animation: heroPulseFade 1s forwards 1.8s;
+}
+.hero-location-pulse::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(22, 138, 76, 0.6);
+  animation: heroPulseRing 3s infinite cubic-bezier(0.2, 0, 0.2, 1);
+  animation-delay: 2s;
+}
+
+/* Description Fade-up */
+.hero-anim-wrapper .intro-copy {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: heroDescFadeUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation-delay: 0.9s;
+}
+
+/* Optional Micro Visual: Faint Topographic Lines */
+.hero-topo-bg {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  background-image: repeating-radial-gradient(circle at 80% 20%, transparent 0, transparent 40px, rgba(22, 138, 76, 0.02) 41px, transparent 42px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-size: 200% 200%;
+  animation: heroTopoDrift 30s linear infinite, heroFadeIn 2s forwards 1s;
+}
+
+/* Keyframes */
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes heroLineExtend {
+  from { width: 0; }
+  to { width: 18px; }
+}
+@keyframes heroLinePulse {
+  0% { opacity: 0; transform: scaleX(1); }
+  50% { opacity: 1; transform: scaleX(1.5); }
+  100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes heroHeadlineReveal {
+  0% { opacity: 0; filter: blur(12px); transform: scale(0.99); }
+  100% { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+@keyframes heroScan {
+  0% { opacity: 0; transform: translateX(-50px) skewX(-20deg); }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(700px) skewX(-20deg); }
+}
+@keyframes heroDescFadeUp {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroPulseFade {
+  to { opacity: 1; }
+}
+@keyframes heroPulseRing {
+  0% { width: 6px; height: 6px; opacity: 1; }
+  100% { width: 35px; height: 35px; opacity: 0; }
+}
+@keyframes heroTopoDrift {
+  0% { background-position: 0% 0%; }
+  100% { background-position: -50px -50px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-anim-wrapper .eyebrow,
+  .hero-anim-wrapper .eyebrow span,
+  .hero-anim-wrapper h1,
+  .hero-anim-wrapper .intro-copy,
+  .hero-location-pulse {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    width: 18px !important;
+  }
+  .hero-scan-line, .hero-topo-bg, .hero-anim-wrapper .eyebrow span::after, .hero-location-pulse::before {
+    display: none !important;
+  }
+}
+

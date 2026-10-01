@@ -5,7 +5,7 @@
 <div class="content-width" style="padding-top: 40px; padding-bottom: 80px;">
   <div class="section-heading">
     <div>
-      <div class="eyebrow"><span /> SATELLITE ACQUISITION</div>
+      <div class="eyebrow"><span /></div>
       <h2>Remote Sensing Analysis Pipeline</h2>
       <p>Configure satellite parameters for the uploaded field evidence.</p>
     </div>
@@ -18,7 +18,7 @@
       <h3 style="margin-bottom: 20px; font-size: 14px; color: var(--muted); letter-spacing: 1px;">FIELD EVIDENCE</h3>
       
       {% if img %}
-      <img src="{{ url_for('static', filename='images/' + img) }}" alt="Field Evidence" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;" />
+      <img src="{{ img }}" alt="Field Evidence" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;" />
       {% else %}
       <div style="width: 100%; height: 200px; background: #f0f0f0; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; color: var(--muted);">No Image</div>
       {% endif %}
@@ -44,7 +44,7 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
         <div>
           <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Satellite Source</label>
-          <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+          <select id="satellite_source" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
             <option>Sentinel-2</option>
             <option>Landsat 8/9</option>
           </select>
@@ -89,10 +89,8 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
         <div>
           <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Spatial Resolution</label>
-          <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
-            <option>10 m</option>
-            <option>20 m</option>
-            <option>60 m</option>
+          <select id="spatial_resolution" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <option value="10">10 m</option>
           </select>
         </div>
         <div>
@@ -122,16 +120,29 @@
       </div>
 
       <button id="search-satellite-btn" class="button button-primary" style="width: 100%; padding: 15px; font-size: 16px;">SEARCH SATELLITE IMAGERY</button>
-<div id="scene-results"></div>
+    </div> <!-- Close Right Column -->
+  </div> <!-- Close Grid -->
 
-    </div>
-  </div>
-</div>
+  <!-- Full Width Results Section -->
+  <div id="scene-results" style="margin-top: 40px;"></div>
+</div> <!-- Close Content Width -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const searchBtn = document.getElementById('search-satellite-btn');
     const resultsDiv = document.getElementById('scene-results');
     
+    // Dynamic Spatial Resolution based on Satellite Source
+    const sourceSelect = document.getElementById('satellite_source');
+    const resolutionSelect = document.getElementById('spatial_resolution');
+    
+    sourceSelect.addEventListener('change', () => {
+        if (sourceSelect.value.includes('Landsat')) {
+            resolutionSelect.innerHTML = '<option value="30">30 m</option>';
+        } else {
+            resolutionSelect.innerHTML = '<option value="10">10 m</option>';
+        }
+    });
+
     searchBtn.addEventListener('click', async () => {
         searchBtn.disabled = true;
         searchBtn.textContent = 'Searching Copernicus Data Space...';
@@ -146,7 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     lng: {{ lng|default(87.5, true) }},
                     start_date: document.getElementById('start_date').value,
                     end_date: document.getElementById('end_date').value,
-                    cloud_cover: document.getElementById('cloud_cover').value
+                    cloud_cover: document.getElementById('cloud_cover').value,
+                    source: document.getElementById('satellite_source').value
                 })
             });
             const scenes = await res.json();
@@ -162,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
             scenes.forEach(scene => {
                 html += `
                 <div class="scene-card" style="display: flex; gap: 15px; padding: 15px; border: 1px solid var(--line); border-radius: 8px; background: white; align-items: center;">
-                    <div style="width: 100px; height: 100px; background: #f0f0f0; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">
+                    <div style="width: 200px; height: 200px; background: #f0f0f0; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">
                         ${scene.thumbnail ? '<img src="' + scene.thumbnail + '" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display=\'none\'; this.parentElement.innerText=\'No Preview\';" />' : 'No Preview'}
                     </div>
                     <div style="flex: 1;">
@@ -209,7 +221,8 @@ function selectScene(id) {
     .then(res => res.json())
     .then(data => {
         if(data.job_id) {
-            pollJob(data.job_id);
+            // Redirect to the dashboard analytics section with the job_id
+            window.location.href = '/?job_id=' + data.job_id + '#analytics';
         } else {
             resultsDiv.innerHTML = '<div style="padding: 15px; background: #f8d7da; color: #721c24;">Failed to start job.</div>';
         }

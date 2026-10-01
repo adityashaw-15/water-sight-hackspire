@@ -7,3 +7,23 @@ venv/
 .venv/
 .env
 *.log
+# Ignore temporary AI debug and patch scripts
+patch_*.py
+rewrite_*.py
+fix_*.py
+test_*.py
+debug*.cjs
+get_errors*.cjs
+*.cjs
+diff.txt
+snapshot.png
+out_reports.html
+debug_page.html
+explore_db.py
+inspect_evidence.py
+get_record.py
+disable_login.py
+
+# Ignore local processed imagery and uploads
+static/satellite/processed/
+data/evidence/uploads/

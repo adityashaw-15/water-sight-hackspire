@@ -47,7 +47,7 @@ function UserEvidencePopupContent({ feature }) {
 }
 
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, LayersControl, WMSTileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, LayersControl, WMSTileLayer, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -164,21 +164,7 @@ function MapViewport({ resetView, indiaStats, fitBoundsObj }) {
     }
   }, [resetView, fitBoundsObj, map]);
 
-  React.useEffect(() => {
-    if(!indiaStats) return;
-    const legend = L.control({ position: "bottomright" });
-    legend.onAdd = () => {
-      const div = L.DomUtil.create("div", "map-legend");
-      div.innerHTML = `<div style="background:white;padding:10px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);font-size:12px;line-height:1.5;">
-        <strong>Watershed Projects</strong><br/>
-        <i style="background:#e74c3c;width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:5px;"></i> Official Data<br/>
-        <i style="background:#e67e22;width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:5px;"></i> Demo Generated
-      </div>`;
-      return div;
-    };
-    legend.addTo(map);
-    return () => map.removeControl(legend);
-  }, [map, indiaStats]);
+  
 
   return null;
 }
@@ -277,7 +263,8 @@ export default function IndiaWatershedMap({ layers, stateId, districtId, project
   }, [projectId, districtId, stateId]);
 
   return (
-    <MapContainer className="india-leaflet-map" center={[22.9, 79.9]} zoom={5} scrollWheelZoom aria-label="India watershed GIS map">
+    <MapContainer className="india-leaflet-map" center={[22.9, 79.9]} zoom={5} scrollWheelZoom aria-label="India watershed GIS map" zoomControl={false}>
+      <ZoomControl position="topright" />
       <LayersControl position="topright">
         <LayersControl.BaseLayer checked name="OpenStreetMap">
           <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

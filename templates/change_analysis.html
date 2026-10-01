@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="content-width" style="padding-top: 40px; padding-bottom: 80px;">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow"><span></span> WATERSHED CHANGE ANALYSIS</div>
+      <h2>Multi-Temporal Comparison</h2>
+      <p>Compare satellite observations from two different time periods to analyze vegetation and water changes.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 30px;">
+    <!-- LEFT PANEL: Search Config -->
+    <div style="background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--line);">
+      <h3 style="margin-bottom: 20px; font-size: 16px;">1. Select Time Periods</h3>
+      
+      <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line);">
+        <strong style="display: block; margin-bottom: 10px; color: var(--primary);">BASELINE DATA</strong>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted);">Start Date</label>
+            <input type="date" id="base_start" value="2022-01-01" class="form-control" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted);">End Date</label>
+            <input type="date" id="base_end" value="2022-03-31" class="form-control" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <strong style="display: block; margin-bottom: 10px; color: var(--primary);">COMPARISON DATA</strong>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted);">Start Date</label>
+            <input type="date" id="comp_start" value="2024-01-01" class="form-control" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted);">End Date</label>
+            <input type="date" id="comp_end" value="2024-03-31" class="form-control" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="font-size:12px; color:var(--muted);">Max Cloud Cover (%)</label>
+        <input type="number" id="cloud_cover" value="20" max="100" min="0" class="form-control" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+      </div>
+
+      <button id="search-btn" class="button button-primary" style="width: 100%; padding: 12px;">SEARCH SCENES</button>
+    </div>
+
+    <!-- RIGHT PANEL: Results & Execution -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div id="search-results" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 200px;">
+        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--line);">
+          <h4 style="margin-bottom: 15px;">Baseline Scenes (Select 1)</h4>
+          <div id="base-list" style="font-size: 14px; color: var(--muted); max-height: 400px; overflow-y: auto;">Search to view scenes...</div>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--line);">
+          <h4 style="margin-bottom: 15px;">Comparison Scenes (Select 1)</h4>
+          <div id="comp-list" style="font-size: 14px; color: var(--muted); max-height: 400px; overflow-y: auto;">Search to view scenes...</div>
+        </div>
+      </div>
+
+      <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <strong style="display:block; margin-bottom:5px;">Selected Configuration</strong>
+          <span style="font-size: 13px; color: var(--muted);" id="selected-summary">No scenes selected.</span>
+        </div>
+        <button id="run-analysis-btn" class="button button-primary" disabled style="padding: 10px 20px;">RUN CHANGE ANALYSIS</button>
+      </div>
+      
+      <div id="status-panel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedBase = null;
+let selectedComp = null;
+
+document.getElementById('search-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('search-btn');
+    btn.disabled = true;
+    btn.innerText = 'Searching...';
+    
+    document.getElementById('base-list').innerHTML = 'Loading...';
+    document.getElementById('comp-list').innerHTML = 'Loading...';
+    
+    const lat = {{ lat|default(23.2, true) }};
+    const lng = {{ lng|default(87.5, true) }};
+    const cloud = document.getElementById('cloud_cover').value;
+    
+    // Fetch Baseline
+    const resBase = await fetch('/api/satellite/search', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, cloud_cover: cloud, start_date: document.getElementById('base_start').value, end_date: document.getElementById('base_end').value })
+    });
+    const baseScenes = await resBase.json();
+    
+    // Fetch Comparison
+    const resComp = await fetch('/api/satellite/search', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, cloud_cover: cloud, start_date: document.getElementById('comp_start').value, end_date: document.getElementById('comp_end').value })
+    });
+    const compScenes = await resComp.json();
+    
+    function renderList(scenes, type) {
+        if (!scenes || scenes.length === 0) return '<div style="padding:10px; background:#f8d7da; color:#721c24; border-radius:4px;">No scenes found.</div>';
+        return scenes.map(s => `
+            <div style="border: 1px solid var(--line); padding: 10px; margin-bottom: 10px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" 
+                 onclick="selectScene('${type}', '${s.id}')" 
+                 id="card-${s.id}">
+                <strong style="display:block; font-size:12px; margin-bottom:5px; word-break: break-all;">${s.id}</strong>
+                <div style="font-size:11px; display:flex; justify-content:space-between;">
+                    <span>${s.acquisition_date.substring(0, 10)}</span>
+                    <span>Cloud: ${s.cloud_cover}%</span>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    document.getElementById('base-list').innerHTML = renderList(baseScenes, 'base');
+    document.getElementById('comp-list').innerHTML = renderList(compScenes, 'comp');
+    
+    btn.disabled = false;
+    btn.innerText = 'SEARCH SCENES';
+});
+
+function selectScene(type, id) {
+    if (type === 'base') {
+        selectedBase = id;
+        document.querySelectorAll('#base-list > div').forEach(el => el.style.borderColor = 'var(--line)');
+    } else {
+        selectedComp = id;
+        document.querySelectorAll('#comp-list > div').forEach(el => el.style.borderColor = 'var(--line)');
+    }
+    
+    document.getElementById(`card-${id}`).style.borderColor = 'var(--primary)';
+    document.getElementById(`card-${id}`).style.borderWidth = '2px';
+    
+    updateSummary();
+}
+
+function updateSummary() {
+    const summary = document.getElementById('selected-summary');
+    const btn = document.getElementById('run-analysis-btn');
+    
+    if (selectedBase && selectedComp) {
+        summary.innerHTML = `<span style="color:var(--primary)">Baseline:</span> ${selectedBase}<br><span style="color:var(--primary)">Comparison:</span> ${selectedComp}`;
+        btn.disabled = false;
+    } else {
+        summary.innerHTML = 'Please select one scene from both lists.';
+        btn.disabled = true;
+    }
+}
+
+document.getElementById('run-analysis-btn').addEventListener('click', () => {
+    const btn = document.getElementById('run-analysis-btn');
+    btn.disabled = true;
+    
+    const panel = document.getElementById('status-panel');
+    panel.innerHTML = '<div style="padding: 20px; background: #e2e3e5; border-radius: 8px; text-align: center;"><strong>Starting Change Analysis...</strong></div>';
+    
+    fetch('/api/change-analysis/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            baseline_scene_id: selectedBase, 
+            comparison_scene_id: selectedComp, 
+            lat: {{ lat|default(23.2, true) }}, 
+            lng: {{ lng|default(87.5, true) }} 
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.job_id) pollChangeJob(data.job_id);
+    });
+});
+
+function pollChangeJob(job_id) {
+    const panel = document.getElementById('status-panel');
+    const interval = setInterval(() => {
+        fetch('/api/change-analysis/' + job_id + '/status')
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'failed') {
+                clearInterval(interval);
+                panel.innerHTML = `<div style="padding: 20px; background: #f8d7da; border-radius: 8px; border: 1px solid #f5c6cb;">
+                    <h4 style="color: #721c24; margin-bottom: 10px;">Analysis Failed</h4>
+                    <p style="color: #721c24; font-size: 14px;">${data.error_message}</p>
+                </div>`;
+            } else if (data.status === 'complete') {
+                clearInterval(interval);
+                panel.innerHTML = `<div style="padding: 20px; background: white; border-radius: 8px; border: 1px solid var(--line);">
+                    <h4 style="margin-bottom: 15px; color: var(--primary);">MULTI-TEMPORAL ANALYSIS COMPLETE</h4>
+                    <p>Redirecting to Main Dashboard to view spatial changes and charts...</p>
+                </div>`;
+                setTimeout(() => {
+                    // Send user back to dashboard with the change_job_id
+                    window.location.href = `/?change_job_id=${job_id}#analytics`;
+                }, 1500);
+            } else {
+                panel.innerHTML = `<div style="padding: 20px; background: #e2e3e5; border-radius: 8px;">
+                    <strong>Processing Dual-Scene Comparison...</strong><br/>
+                    Step: ${data.current_step} <br/>
+                    Progress: ${data.progress}%
+                </div>`;
+            }
+        });
+    }, 1000);
+}
+</script>
+{% endblock %}

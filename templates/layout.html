@@ -67,6 +67,46 @@
       .nav-links a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; }
       .nav-links a.active { color: var(--blue); }
       .profile-pic { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    
+/* Navbar Micro UI Enhancement */
+.main-nav a,
+.system-button,
+.nav-interactive,
+.nav-links a {
+  display: inline-block;
+  transition: transform 220ms ease-out, color 0.18s, background 0.18s, border-color 0.18s !important;
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .main-nav a:hover,
+  .system-button:hover,
+  .nav-interactive:hover,
+  .nav-links a:hover {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-nav a:hover,
+  .system-button:hover,
+  .nav-interactive:hover,
+  .nav-links a:hover {
+    transform: none !important;
+  }
+}
+
+.auth-btn {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  padding: 10px 18px;
+  margin: -10px -8px;
+  border-radius: 6px;
+}
+.auth-btn-primary { color: #102c3b !important; }
+.auth-btn-accent { color: #168a4c !important; }
+.auth-btn-muted { color: #687d72 !important; }
+
     </style>
   </head>
   <body>
@@ -98,7 +138,7 @@
             Profile
           {% endif %}
         </a>
-        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('logout') }}" class="nav-interactive auth-btn auth-btn-muted">Logout</a>
       </div>
     </nav>
     {% endif %}

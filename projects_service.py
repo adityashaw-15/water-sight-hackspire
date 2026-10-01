@@ -435,3 +435,134 @@ def get_project_photos_list(project_id):
         "total_locations": len(locations_with_photos),
         "photos": photos
     })
+
+
+@projects_bp.route('/api/regional-monitoring', methods=['GET'])
+def get_regional_monitoring():
+    if not os.path.exists(DB_PATH):
+        return jsonify({'status': 'unavailable'}), 503
+        
+    import sqlite3
+    import json
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    
+    rows = conn.execute('''
+        SELECT project_name, district_name, state_name, full_json
+        FROM geotags 
+        WHERE json_extract(full_json, '$.properties.photo1_name') IS NOT NULL
+        GROUP BY project_name
+        ORDER BY project_name ASC
+        LIMIT 4
+    ''').fetchall()
+    
+    regions = []
+    for r in rows:
+        props = json.loads(r['full_json']).get('properties', {})
+        sno = props.get('collection_sno')
+        photo_url = f"/api/projects/geotagged/{sno}/photo/1" if sno else None
+        
+        regions.append({
+            "official_id": props.get('project_code') or r['project_code'],
+            "project_name": r['project_name'],
+            "district": r['district_name'],
+            "state": r['state_name'],
+            "work_name": props.get('activity_description', 'Watershed Work'),
+            "photos": [{"url": photo_url}] if photo_url else []
+        })
+        
+    conn.close()
+    
+    return jsonify({
+        'status': 'success',
+        'regions': regions
+    })
+
+@projects_bp.route('/api/monitoring-signals', methods=['GET'])
+def get_monitoring_signals():
+    project_id = request.args.get('project_id')
+    
+    if not os.path.exists(DB_PATH):
+        return jsonify({'status': 'unavailable'}), 503
+        
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    
+    signals = []
+    
+    if project_id:
+        proj = conn.execute('SELECT project_name FROM projects WHERE project_code=?', (project_id,)).fetchone()
+        if proj:
+            pname = proj['project_name']
+            tags = conn.execute('SELECT * FROM geotags WHERE project_name=? LIMIT 5', (pname,)).fetchall()
+            for t in tags:
+                signals.append({
+                    'id': t['work_serial_code'],
+                    'severity': 'Info',
+                    'title': t['activity_description'],
+                    'description': f"Official implementation record geotagged.",
+                    'location': f"{t['district_name']}, {t['state_name']}",
+                    'confidence': 'Verified',
+                    'time': 'Recent',
+                    'region': pname,
+                    'source': 'DoLR WDC-PMKSY 2.0'
+                })
+    else:
+        tags = conn.execute('SELECT * FROM geotags LIMIT 8').fetchall()
+        for t in tags:
+            signals.append({
+                'id': t['work_serial_code'],
+                'severity': 'Info',
+                'title': t['activity_description'],
+                'description': f"Official implementation record geotagged for {t['project_name']}.",
+                'location': f"{t['district_name']}, {t['state_name']}",
+                'confidence': 'Verified',
+                'time': 'Recent',
+                'region': t['project_name'],
+                'source': 'DoLR WDC-PMKSY 2.0'
+            })
+            
+    conn.close()
+    
+    return jsonify({
+        'status': 'success',
+        'source': 'official',
+        'data': signals
+    })
+
+@projects_bp.route('/api/monitoring-summary', methods=['GET'])
+def get_monitoring_summary():
+    project_id = request.args.get('project_id')
+    
+    if not os.path.exists(DB_PATH):
+        return jsonify({'status': 'unavailable'}), 503
+        
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    
+    summary = {
+        'total_geotags': 0,
+        'activities': []
+    }
+    
+    if project_id:
+        proj = conn.execute('SELECT project_name FROM projects WHERE project_code=?', (project_id,)).fetchone()
+        if proj:
+            pname = proj['project_name']
+            summary['total_geotags'] = conn.execute('SELECT COUNT(*) FROM geotags WHERE project_name=?', (pname,)).fetchone()[0]
+            acts = conn.execute('SELECT activity_description, COUNT(*) as c FROM geotags WHERE project_name=? GROUP BY activity_description ORDER BY c DESC LIMIT 4', (pname,)).fetchall()
+            summary['activities'] = [{'name': a['activity_description'], 'count': a['c']} for a in acts]
+            summary['project_name'] = pname
+    else:
+        summary['total_geotags'] = conn.execute('SELECT COUNT(*) FROM geotags').fetchone()[0]
+        acts = conn.execute('SELECT activity_description, COUNT(*) as c FROM geotags GROUP BY activity_description ORDER BY c DESC LIMIT 4').fetchall()
+        summary['activities'] = [{'name': a['activity_description'], 'count': a['c']} for a in acts]
+        summary['project_name'] = 'All India'
+        
+    conn.close()
+    
+    return jsonify({
+        'status': 'success',
+        'source': 'official',
+        'data': summary
+    })
