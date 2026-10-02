@@ -40,7 +40,11 @@ function UserEvidencePopupContent({ feature }) {
       
       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #eee', fontSize: '11px', color: '#888', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span><strong>Source:</strong> Watersight field evidence</span>
-        <a href={`/satellite-analysis?lat=${feature.geometry?.coordinates[1]}&lng=${feature.geometry?.coordinates[0]}&img=${encodeURIComponent(p.image_url || '')}`} target="_blank" className="button button-primary satellite-btn" style={{ padding: '4px 8px', fontSize: '10px', textDecoration: 'none' }}>Analyze Satellite Data</a>
+        {p.ai_status === 'invalid' ? (
+            <button disabled className="button button-secondary satellite-btn" style={{ padding: '4px 8px', fontSize: '10px', opacity: 0.6, cursor: 'not-allowed', border: '1px solid #ccc' }} title="AI flagged this image as irrelevant or a screenshot. Analysis disabled.">Analysis Disabled</button>
+          ) : (
+            <span dangerouslySetInnerHTML={{ __html: `<button type="button" onclick="window.verifyAndAnalyzeEvidence('${p.id}', ${feature.geometry?.coordinates[1]}, ${feature.geometry?.coordinates[0]}, '${p.image_url || ''}', this)" class="button button-primary satellite-btn" style="padding: 4px 8px; font-size: 10px; cursor: pointer;">Analyze Satellite Data</button>` }} />
+          )}
       </div>
     </div>
   );
@@ -174,6 +178,52 @@ function MapViewport({ resetView, indiaStats, fitBoundsObj }) {
   return null;
 }
 
+
+// Expose a global function for Leaflet popup buttons to call
+window.verifyAndAnalyzeEvidence = async function(evidenceId, lat, lng, imgUrl, btnElement) {
+    const originalText = btnElement.innerText;
+    btnElement.innerText = "Verifying with AI...";
+    btnElement.disabled = true;
+    btnElement.style.opacity = 0.7;
+    btnElement.style.cursor = 'wait';
+    
+    try {
+      const response = await fetch(`/api/evidence/${evidenceId}/validate`, { method: 'POST' });
+      const data = await response.json();
+      const status = data.status;
+      
+      if (status === 'invalid') {
+        btnElement.innerText = "Analysis Disabled";
+        btnElement.style.cursor = 'not-allowed';
+        btnElement.style.backgroundColor = '#6c757d';
+        btnElement.style.borderColor = '#6c757d';
+        
+        let msgDiv = document.getElementById(`ai-msg-${evidenceId}`);
+        if (!msgDiv) {
+            msgDiv = document.createElement('div');
+            msgDiv.id = `ai-msg-${evidenceId}`;
+            msgDiv.style.color = '#ef4444';
+            msgDiv.style.fontSize = '10px';
+            msgDiv.style.marginTop = '8px';
+            msgDiv.style.width = '100%';
+            msgDiv.style.textAlign = 'right';
+            msgDiv.style.fontWeight = 'bold';
+            btnElement.parentNode.parentNode.appendChild(msgDiv);
+        }
+        msgDiv.innerText = "✖ Rejected: AI detected a screen/device instead of a natural landscape.";
+        return;
+      } else {
+        btnElement.innerText = originalText;
+        btnElement.disabled = false;
+        btnElement.style.opacity = 1;
+        btnElement.style.cursor = 'pointer';
+        window.open(`/satellite-analysis?lat=${lat}&lng=${lng}&img=${encodeURIComponent(imgUrl)}`, '_blank');
+      }
+    } catch (error) {
+      console.error(error);
+      btnElement.innerText = "Error verifying";
+    }
+  };
 export default function IndiaWatershedMap({ layers, stateId, districtId, projectId, resetView, onFieldEvidence }) {
   const [data, setData] = useState({});
   const [wdcGeotags, setWdcGeotags] = useState({ features: [], stats: null });

@@ -253,7 +253,137 @@ from backend.models import FieldEvidence
 app.config['EVIDENCE_FOLDER'] = os.path.join(app.root_path, 'data', 'evidence', 'uploads')
 os.makedirs(app.config['EVIDENCE_FOLDER'], exist_ok=True)
 
+
+import torch
+from torchvision import models, transforms
+from PIL import Image
+
+try:
+    print("Loading PyTorch MobileNetV3...")
+    mobilenet = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)
+    mobilenet.eval()
+    
+    ai_preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    
+    with open("imagenet_classes.txt", "r") as f:
+        imagenet_classes = [s.strip() for s in f.readlines()]
+except Exception as e:
+    print("Error loading AI model:", e)
+    mobilenet = None
+
+def run_ai_validation(filepath, original_filename):
+    if not mobilenet:
+        return "valid"
+        
+    try:
+        img = Image.open(filepath).convert('RGB')
+        input_tensor = ai_preprocess(img)
+        input_batch = input_tensor.unsqueeze(0)
+        
+        with torch.no_grad():
+            output = mobilenet(input_batch)
+            
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
+        top3_prob, top3_catid = torch.topk(probabilities, 3)
+        
+        predicted_categories = [imagenet_classes[top3_catid[i]].lower() for i in range(3)]
+        print(f"====== AI PREDICTIONS for {original_filename}: {predicted_categories} ======")
+        
+        banned_keywords = ['web site', 'website', 'monitor', 'screen', 'cellular telephone', 'mobile phone', 'cellphone', 'television', 'menu', 'envelope', 'desktop', 'laptop', 'notebook', 'ipod', 'typewriter', 'crossword', 'comic book', 'book jacket', 'street sign', 'cash machine', 'digital clock']
+        
+        for cat in predicted_categories:
+            if any(banned in cat for banned in banned_keywords):
+                return "invalid"
+                
+        return "valid"
+    except Exception as e:
+        print(f"AI INFERENCE ERROR: {e}")
+        return "valid"
+
+
+import torch
+from torchvision import models, transforms
+from PIL import Image
+
+# Initialize PyTorch MobileNetV3 globally
+try:
+    print("Loading PyTorch MobileNetV3 for validation endpoint...")
+    mobilenet = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)
+    mobilenet.eval()
+    
+    ai_preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    
+    with open("imagenet_classes.txt", "r") as f:
+        imagenet_classes = [s.strip() for s in f.readlines()]
+except Exception as e:
+    print("Error loading AI model:", e)
+    mobilenet = None
+
+@app.route('/api/evidence/<evidence_id>/validate', methods=['POST'])
+def validate_evidence_ai(evidence_id):
+    if not mobilenet:
+        return jsonify({"status": "valid", "message": "AI fallback"}), 200
+        
+    session_db = sessionmaker(bind=engine)()
+    evidence = session_db.query(FieldEvidence).filter(FieldEvidence.id == evidence_id).first()
+    
+    if not evidence:
+        session_db.close()
+        return jsonify({"error": "Evidence not found"}), 404
+        
+    if evidence.status == 'invalid':
+        session_db.close()
+        return jsonify({"status": "invalid"}), 200
+        
+    try:
+        img = Image.open(evidence.file_path).convert('RGB')
+        input_tensor = ai_preprocess(img)
+        input_batch = input_tensor.unsqueeze(0)
+        
+        with torch.no_grad():
+            output = mobilenet(input_batch)
+            
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
+        top3_prob, top3_catid = torch.topk(probabilities, 3)
+        
+        predicted_categories = [imagenet_classes[top3_catid[i]].lower() for i in range(3)]
+        print(f"====== AI PREDICTIONS for {evidence.original_filename}: {predicted_categories} ======")
+        
+        banned_keywords = ['web site', 'website', 'monitor', 'screen', 'cellular telephone', 'mobile phone', 'cellphone', 'television', 'menu', 'envelope', 'desktop', 'laptop', 'notebook', 'ipod', 'typewriter', 'crossword', 'comic book', 'book jacket', 'street sign', 'cash machine', 'digital clock']
+        
+        is_valid = True
+        for cat in predicted_categories:
+            if any(banned in cat for banned in banned_keywords):
+                is_valid = False
+                break
+                
+        if is_valid:
+            evidence.status = "valid"
+        else:
+            evidence.status = "invalid"
+            
+        session_db.commit()
+        result_status = evidence.status
+    except Exception as e:
+        print(f"AI INFERENCE ERROR: {e}")
+        result_status = "valid"
+        
+    session_db.close()
+    return jsonify({"status": result_status}), 200
+
 @app.route('/api/evidence', methods=['POST'])
+
+
 # @login_required # If you want to require login
 def upload_evidence_post():
     if not current_user.is_authenticated:
@@ -466,7 +596,8 @@ def get_all_evidence():
                     "image_url": f"/api/evidence/{ev.id}/image",
                     "user_id": ev.user_id,
                     "accuracy_m": ev.accuracy_m,
-                    "source": "Watersight field evidence"
+                    "source": "Watersight field evidence",
+                    "ai_status": ev.status
                 }
             })
             

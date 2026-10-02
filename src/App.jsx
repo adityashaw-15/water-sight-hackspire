@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import {
   Activity, AlertTriangle, BellRing, CalendarDays, Download, Droplets, Expand, Gauge, Globe2, Layers3, MapPin,
   Menu, MoreHorizontal, Navigation, RefreshCw, Satellite, Search, ShieldCheck, X, Camera, Power
@@ -17,6 +17,12 @@ export default function App() {
   const [realRegions, setRealRegions] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeHash, setActiveHash] = useState(window.location.hash || '#overview');
+  useEffect(() => {
+    const onHashChange = () => setActiveHash(window.location.hash || '#overview');
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const [layers, setLayers] = useState({ states: true, districts: false, basin: false, subbasin: false, watershed: true, micro: false, villages: true, rivers: true, drainage: true, waterBodies: true, wells: false, interventions: true, fieldImages: true, critical: false });
   const [sensitivity, setSensitivity] = useState(72);
   const [range, setRange] = useState('Last 7 Days');
@@ -246,7 +252,11 @@ export default function App() {
   return <div className="app-shell">
     <AnimatedWatershedBackground variant="dashboard" />
     
-    <header className="site-header"><div className="header-inner"><a className="brand" href="#overview" aria-label="WaterSight home"><span className="brand-logo-frame"><img className="brand-logo-image" src="/watersight-logo.png" alt="WaterSight" /></span><span><strong>WaterSight</strong><small>Geospatial Intelligence for Watershed Development</small></span></a><nav className={menuOpen ? 'main-nav nav-open' : 'main-nav'} aria-label="Main navigation">{navigation.map((item) => <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} onClick={() => setMenuOpen(false)}>{item}</a>)}</nav><div className="header-actions">
+    <header className="site-header"><div className="header-inner"><a className="brand" href="#overview" aria-label="WaterSight home"><span className="brand-logo-frame"><img className="brand-logo-image" src="/watersight-logo.png" alt="WaterSight" /></span><span><strong>WaterSight</strong><small>Geospatial Intelligence for Watershed Development</small></span></a><nav className={menuOpen ? 'main-nav nav-open' : 'main-nav'} aria-label="Main navigation">{navigation.map((item) => {
+  const href = `#${item.toLowerCase().replace(' ', '-')}`;
+  const isActive = activeHash === href;
+  return <a key={item} href={href} className={isActive ? 'active' : ''} onClick={() => { setMenuOpen(false); window.location.hash = href; }}>{item}</a>
+})}</nav><div className="header-actions">
           {window.CURRENT_USER ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginRight: '15px', fontSize: '13px' }}>
               <a href="/profile" className="nav-interactive" style={{ color: '#102c3b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', fontSize: '15px' }}>
@@ -269,7 +279,7 @@ export default function App() {
           )}
 <button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label="Toggle navigation" title="Toggle navigation">{menuOpen ? <X size={19} /> : <Menu size={20} />}</button></div></div></header>
     <main>
-      <section className="overview-section content-width" id="overview"><div className="intro-row"><div className="hero-anim-wrapper">  <div className="hero-topo-bg"></div>  <div className="eyebrow"><span></span> WATERSHED INTELLIGENCE</div>  <h1>    <span className="hero-scan-line"></span>    See the Watershed. Understand the Change.    <div className="hero-location-pulse"></div>  </h1>  <p className="intro-copy">A platform combining geo-coded field evidence, satellite observations and GIS layers for Indian watershed development monitoring.</p></div><div className="intro-actions"><button className="button button-secondary" type="button" onClick={() => setShowUploadModal(true)}><Camera size={16} /> Upload Evidence</button><button className="button button-secondary" type="button" onClick={exportCsv}><Download size={16} /> Export data</button><button className="button button-primary" type="button" onClick={refreshSystem}><RefreshCw size={16} className={isRefreshing ? 'spin' : ''} /> Refresh Data</button></div></div>
+      <section className="overview-section content-width" id="overview"><div className="intro-row"><div className="hero-anim-wrapper">  <div className="hero-topo-bg"></div>  <div className="eyebrow"><span></span></div>  <h1>    <span className="hero-scan-line"></span>    See the Watershed. Understand the Change.    <div className="hero-location-pulse"></div>  </h1>  <p className="intro-copy">A platform combining geo-coded field evidence, satellite observations and GIS layers for Indian watershed development monitoring.</p></div><div className="intro-actions"><button className="button button-secondary" type="button" onClick={() => setShowUploadModal(true)}><Camera size={16} /> Upload Evidence</button><button className="button button-secondary" type="button" onClick={exportCsv}><Download size={16} /> Export data</button><button className="button button-primary" type="button" onClick={refreshSystem}><RefreshCw size={16} className={isRefreshing ? 'spin' : ''} /> Refresh Data</button></div></div>
       <WatershedHeroVisual />
       <div className="metrics-grid"><article className="metric-card"><div className="metric-icon blue"><Droplets size={22} /></div><div><span>Watershed area</span><strong>48.6 km²</strong><small className="up">12 <em>water bodies</em></small></div><Activity className="metric-spark" size={48} /></article><article className="metric-card"><div className="metric-icon red"><AlertTriangle size={22} /></div><div><span>Watershed interventions</span><strong>18</strong><small className="up">11 <em>completed</em></small></div><BellRing className="metric-spark red-stroke" size={45} /></article><article className="metric-card"><div className="metric-icon teal"><MapPin size={22} /></div><div><span>Geo-coded images</span><strong>24</strong><small className="neutral">6 <em>villages</em></small></div><Globe2 className="metric-spark" size={48} /></article></div></section>
       <section className="map-section" id="map"><div className="content-width"><div className="section-heading map-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED EXPLORER</div><h2>India-focused watershed GIS</h2><p>Select a watershed to inspect its local evidence, drainage and interventions.</p></div>{notice && <div className="map-update"><span className="live-dot" /> {notice}</div>}</div><div className="watershed-selectors">

@@ -211,7 +211,7 @@ export default function AnalyticsDashboard() {
           <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #d8e8df' }}>
             <h3 style={{ marginBottom: '15px', color: '#102c3b', fontSize: '16px' }}>2. Water Extent Map (Real NDWI)</h3>
             <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden' }}>
-              <MapContainer bounds={mapBounds} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+              <MapContainer bounds={mapBounds} style={{ height: 'calc(100% - 25px)', width: '100%' }} scrollWheelZoom={false}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
                 <ImageOverlay url={ndwiImg} bounds={mapBounds} opacity={0.8} />
               </MapContainer>
@@ -227,14 +227,14 @@ export default function AnalyticsDashboard() {
             <h3 style={{ marginBottom: '15px', color: '#102c3b', fontSize: '16px' }}>4. Water Change (Before / After)</h3>
             <div style={{ display: 'flex', gap: '10px', height: '300px' }}>
                 <div style={{ flex: 1, borderRadius: '8px', overflow: 'hidden' }}>
-                  <MapContainer bounds={mapBounds} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>
+                  <MapContainer bounds={mapBounds} style={{ height: 'calc(100% - 25px)', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <ImageOverlay url={ndwiImg} bounds={mapBounds} opacity={0.3} />
                   </MapContainer>
                   <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '5px' }}>{`Before (${baselineYear})`}</div>
                 </div>
                 <div style={{ flex: 1, borderRadius: '8px', overflow: 'hidden' }}>
-                  <MapContainer bounds={mapBounds} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>
+                  <MapContainer bounds={mapBounds} style={{ height: 'calc(100% - 25px)', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <ImageOverlay url={ndwiImg} bounds={mapBounds} opacity={0.9} />
                   </MapContainer>
@@ -277,7 +277,7 @@ export default function AnalyticsDashboard() {
           <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #d8e8df' }}>
             <h3 style={{ marginBottom: '15px', color: '#102c3b', fontSize: '16px' }}>5. Vegetation Change Map (Real NDVI)</h3>
             <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden' }}>
-              <MapContainer bounds={mapBounds} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+              <MapContainer bounds={mapBounds} style={{ height: 'calc(100% - 25px)', width: '100%' }} scrollWheelZoom={false}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
                 <ImageOverlay url={ndviImg} bounds={mapBounds} opacity={0.8} />
               </MapContainer>

@@ -26,4 +26,18 @@ disable_login.py
 
 # Ignore local processed imagery and uploads
 static/satellite/processed/
+# data/evidence/uploads/
+
+*.db
 data/evidence/uploads/
+pip_freeze.txt
+old_*.jsx
+setup_ai.py
+stage1_dashboard.py
+add_power_btn.py
+move_buttons.py
+remove_banner.py
+remove_demo_text.py
+remove_refresh_btn.py
+reset_dashboard.py
+update_logout_btn.py
