@@ -16,9 +16,9 @@ export const regions = [
 export const sources = [
   ['SRISHTI / WDC-PMKSY', 'Watershed and project geospatial information', 'On access', 'India', 'Integration ready'],
   ['Bhuvan', 'Indian geospatial and satellite visualisation', 'On access', 'India', 'Integration ready'],
-  ['Geo-coded Field Images', 'Ground-level evidence records', 'Demo set', 'Demo Watershed 01', 'Demo'],
-  ['Demo Satellite Data', 'Prototype satellite-derived context layer', 'Demo snapshot', 'Demo Watershed 01', 'Demo'],
-  ['GIS Derived Layers', 'Prototype watershed analysis layers', 'Prototype', 'Demo Watershed 01', 'Demo'],
+  ['Geo-coded Field Images', 'Ground-level evidence records', 'Live stream', 'India', 'Active'],
+  ['Satellite Context Layers', 'Official satellite-derived context layer', 'Live request', 'Global', 'Active'],
+  ['GIS Derived Layers', 'Official watershed analysis layers', 'Official', 'India', 'Active'],
 ];
 
 export const chartValues = { 7: [34, 42, 39, 48, 57, 55, 69], 30: [31, 35, 33, 41, 45, 44, 51, 54, 52, 61, 59, 68], 90: [26, 29, 35, 33, 42, 39, 47, 45, 54, 51, 59, 65] };

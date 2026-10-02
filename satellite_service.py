@@ -27,7 +27,10 @@ def search_satellite_scenes(lat, lon, start_date, end_date, max_cloud_cover=20, 
             "collections": [collection],
             "bbox": bbox,
             "datetime": f"{start_date}/{end_date}",
-            "limit": 10
+            "limit": 10,
+            "query": {
+                "eo:cloud_cover": {"lte": max_cloud_cover}
+            }
         }
 
         response = requests.post(PC_STAC_URL, json=payload)

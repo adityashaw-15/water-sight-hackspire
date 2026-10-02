@@ -61,6 +61,7 @@ function GeotagPopupContent({ feature }) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setIdx(0);
     fetch(`/api/projects/geotagged/${feature.properties.collection_sno}/photos`)
       .then(r => r.json())
       .then(res => {
@@ -109,23 +110,27 @@ function GeotagPopupContent({ feature }) {
                 Original image not available on remote server.
               </div>
             </div>
-            {photoData.length > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
-                <button 
-                  onClick={() => setIdx(i => i > 0 ? i - 1 : photoData.length - 1)}
-                  style={{ background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}
-                >
-                  Prev
-                </button>
-                <span style={{ fontSize: '12px', color: '#666' }}>{idx + 1} / {photoData.length}</span>
-                <button 
-                  onClick={() => setIdx(i => i < photoData.length - 1 ? i + 1 : 0)}
-                  style={{ background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}
-                >
-                  Next
-                </button>
-              </div>
-            )}
+                          {photoData.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
+                  {photoData.length > 1 ? (
+                    <button 
+                      onClick={() => setIdx(i => i > 0 ? i - 1 : photoData.length - 1)}
+                      style={{ background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}
+                    >
+                      Prev
+                    </button>
+                  ) : <div style={{width: '42px'}}></div>}
+                  <span style={{ fontSize: '12px', color: '#666' }}>{idx < photoData.length ? idx + 1 : 1} / {photoData.length}</span>
+                  {photoData.length > 1 ? (
+                    <button 
+                      onClick={() => setIdx(i => i < photoData.length - 1 ? i + 1 : 0)}
+                      style={{ background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}
+                    >
+                      Next
+                    </button>
+                  ) : <div style={{width: '42px'}}></div>}
+                </div>
+              )}
             <div style={{ fontSize: '10px', color: '#888', marginTop: '5px', textAlign: 'right' }}>
               Source: DoLR / NRSC Bhuvan
             </div>

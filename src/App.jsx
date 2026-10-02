@@ -63,6 +63,7 @@ export default function App() {
   
   const [dataStatus, setDataStatus] = useState({ admin: 'demo', dolr: 'demo' });
   const [dataError, setDataError] = useState({ admin: null, dolr: null });
+  const [dataSync, setDataSync] = useState({ admin: null, dolr: null });
   const [mapReset, setMapReset] = useState({ count: 0, recentEvidence: null });
   const [evidenceStats, setEvidenceStats] = useState({ total: 0, geocoded: 0 });
   
@@ -105,7 +106,8 @@ export default function App() {
         return r.json();
       })
       .then(res => {
-        setDataStatus(prev => ({ ...prev, admin: res.dataSource || dataMode }));
+        setDataStatus(prev => ({ ...prev, admin: res.connection_status || res.source || res.dataSource || dataMode }));
+        setDataSync(prev => ({ ...prev, admin: res.last_successful_sync }));
         setAvailableStates(res.data || []);
       })
       .catch((err) => {
@@ -131,7 +133,8 @@ export default function App() {
         return r.json();
       })
       .then(res => {
-        setDataStatus(prev => ({ ...prev, admin: res.dataSource || dataMode }));
+        setDataStatus(prev => ({ ...prev, admin: res.connection_status || res.source || res.dataSource || dataMode }));
+        setDataSync(prev => ({ ...prev, admin: res.last_successful_sync }));
         setAvailableDistricts(res.data || []);
       })
       .catch((err) => {
@@ -157,7 +160,8 @@ export default function App() {
         return r.json();
       })
       .then(res => {
-        setDataStatus(prev => ({ ...prev, dolr: 'demo' }));
+        setDataStatus(prev => ({ ...prev, dolr: res.connection_status || res.dataSource || 'demo' }));
+          setDataSync(prev => ({ ...prev, dolr: res.last_successful_sync }));
         setAvailableProjects(res.projects || res.data || []);
       })
       .catch((err) => {
@@ -369,7 +373,7 @@ export default function App() {
           </aside>
         </div>
       </section>
-      <section className="regions-section"><div className="content-width"><div className="section-heading"><div><div className="eyebrow"><span /> PRIORITY COVERAGE</div><h2>Regional monitoring</h2><p>Focused observation areas with the most recent water conditions.</p></div><button className="button button-secondary" type="button" onClick={() => { document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); flash('Navigating to India Watershed Explorer'); }}><Globe2 size={16} /> View all regions</button></div>{regionalError ? (
+      <section className="regions-section"><div className="content-width"><div className="section-heading"><div><div className="eyebrow"><span /> PRIORITY COVERAGE</div><h2>Regional monitoring</h2><p>Focused observation areas with the most recent water conditions.</p></div><a href="#map" className="button button-secondary" onClick={() => flash('Navigating to India Watershed Explorer')}><Globe2 size={16} /> View all regions</a></div>{regionalError ? (
   <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f', background: '#fff0f0', borderRadius: '8px', border: '1px solid #fad2d2', gridColumn: '1 / -1' }}>
     Official regional project data is temporarily unavailable. <button onClick={() => window.location.reload()} style={{ marginLeft: '10px', padding: '4px 8px', background: '#fff', border: '1px solid #fad2d2', borderRadius: '4px', cursor: 'pointer' }}>Retry</button>
   </div>
@@ -444,8 +448,8 @@ export default function App() {
 </div></section>
       <AnalyticsDashboard />
       <section className="content-width data-section" id="data-sources"><div className="section-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED DATA NETWORK</div><h2>Data sources</h2><p>Transparent source status for the Watersight prototype and future official integrations.</p></div><button className="button button-secondary" type="button" onClick={() => flash('Data-source readiness report is available')}><Search size={16} /> View source health</button></div><div className="status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px', marginBottom: '30px' }}>
-        <DataStatusBadge status={dataStatus.admin} sourceName="Administrative Geography" error={dataError.admin} />
-        <DataStatusBadge status={dataStatus.dolr} sourceName="DoLR WDC-PMKSY" error={dataError.dolr} />
+        <DataStatusBadge status={dataStatus.admin} sourceName="Administrative Geography" error={dataError.admin} lastSync={dataSync.admin} />
+        <DataStatusBadge status={dataStatus.dolr} sourceName="DoLR WDC-PMKSY" error={dataError.dolr} lastSync={dataSync.dolr} />
         <DataStatusBadge status="official" sourceName="Bhuvan / NRSC" error={null} />
       </div>
       <div className="source-table-wrap"><table className="source-table"><thead><tr><th>Source</th><th>Purpose</th><th>Refresh</th><th>Coverage</th><th>Status</th></tr></thead><tbody>{sources.map(([source, detail, refresh, coverage, status]) => <tr key={source}><td><span className="source-icon"><Satellite size={16} /></span><strong>{source}</strong></td><td>{detail}</td><td>{refresh}</td><td>{coverage}</td><td><span className="source-status"><i /> {status}</span></td></tr>)}</tbody></table></div></section>

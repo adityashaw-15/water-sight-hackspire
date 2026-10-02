@@ -279,10 +279,18 @@ def get_geotag_photos(collection_sno):
         
     props = json.loads(row['full_json']).get('properties', {})
     photos = []
+    seen_bases = set()
     
     for i in range(1, 5):
         pname = props.get(f'photo{i}_name')
         if pname:
+            import re
+            base_name = re.sub(r'^photo\d+_', '', pname)
+            if base_name in seen_bases:
+                continue
+            seen_bases.add(base_name)
+            print('DEBUG:', pname, base_name)
+            
             photos.append({
                 "url": f"/api/projects/geotagged/{collection_sno}/photo/{i}",
                 "thumbnail_url": f"/api/projects/geotagged/{collection_sno}/photo/{i}",
@@ -451,8 +459,9 @@ def get_regional_monitoring():
         SELECT project_name, district_name, state_name, full_json
         FROM geotags 
         WHERE json_extract(full_json, '$.properties.photo1_name') IS NOT NULL
+          AND project_name IN ('PASCHIM BARDHAMAN-WDC - 2 /2021-22', 'PURULIA-WDC - 7 /2021-22', 'BANKURA-WDC - 1 /2021-22', 'PURULIA-WDC - 2 /2021-22')
         GROUP BY project_name
-        ORDER BY project_name ASC
+        ORDER BY RANDOM()
         LIMIT 4
     ''').fetchall()
     

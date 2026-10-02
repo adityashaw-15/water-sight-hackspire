@@ -252,9 +252,6 @@ export default function AnimatedWatershedBackground({ variant = 'dashboard' }) {
         </g>
         <g className="geo-ripples"><circle cx="240" cy="459" r="12" /><circle cx="1051" cy="414" r="11" /><circle cx="924" cy="775" r="9" /></g>
       </svg>
-      <span className="geo-coordinate coordinate-a">DEMO GRID · 22.5726° N</span>
-      <span className="geo-coordinate coordinate-b">88.3639° E · FIELD CELL</span>
-      <span className="geo-coordinate coordinate-c">WATERSHED SECTOR 03</span>
     </div>
   );
 }

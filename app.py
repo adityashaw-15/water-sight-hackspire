@@ -498,10 +498,10 @@ def api_satellite_search():
     lon = float(data.get('lng', 87.5))
     start_date = data.get('start_date', '2023-01-01')
     end_date = data.get('end_date', '2023-01-31')
-    cloud_cover = int(data.get('cloud_cover', 20))
+    max_cloud_cover = int(data.get('max_cloud_cover', 20))
     source = data.get('source', 'Sentinel-2')
     
-    scenes = search_satellite_scenes(lat, lon, start_date, end_date, cloud_cover, source)
+    scenes = search_satellite_scenes(lat, lon, start_date, end_date, max_cloud_cover, source)
     return jsonify(scenes)
 
 if __name__ == '__main__':
