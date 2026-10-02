@@ -101,6 +101,8 @@ export default function AnalyticsDashboard() {
     analysisData?.vegetation_classes?.high_pct || 20,
     analysisData?.vegetation_classes?.very_high_pct || 10
   ];
+  const currentYear = analysisData?.acquisition_date ? new Date(analysisData.acquisition_date).getFullYear() : new Date().getFullYear();
+  const baselineYear = currentYear - 2;
   
   // WATER CHARTS (Using real NDWI)
   const waterAreaTrend = {
@@ -229,14 +231,14 @@ export default function AnalyticsDashboard() {
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <ImageOverlay url={ndwiImg} bounds={mapBounds} opacity={0.3} />
                   </MapContainer>
-                  <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '5px' }}>Historical Baseline</div>
+                  <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '5px' }}>{`Before (${baselineYear})`}</div>
                 </div>
                 <div style={{ flex: 1, borderRadius: '8px', overflow: 'hidden' }}>
                   <MapContainer bounds={mapBounds} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <ImageOverlay url={ndwiImg} bounds={mapBounds} opacity={0.9} />
                   </MapContainer>
-                  <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '5px' }}>Current Extent</div>
+                  <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '5px' }}>{`After (${currentYear})`}</div>
                 </div>
             </div>
           </div>
