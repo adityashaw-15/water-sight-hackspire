@@ -23,6 +23,8 @@ export default function App() {
   const [period, setPeriod] = useState(7);
   const [alertFilter, setAlertFilter] = useState('All');
   const [monitoringSignals, setMonitoringSignals] = useState([]);
+    const [alertData, setAlertData] = useState(null);
+    const [visibleCount, setVisibleCount] = useState(6);
   const [monitoringSummary, setMonitoringSummary] = useState(null);
   const [monitoringLoading, setMonitoringLoading] = useState(true);
   const [monitoringError, setMonitoringError] = useState(false);
@@ -36,18 +38,22 @@ export default function App() {
   React.useEffect(() => {
     setMonitoringLoading(true);
     setMonitoringError(false);
-    let urlSig = '/api/monitoring-signals';
-    let urlSum = '/api/monitoring-summary';
-    if (selectedProject) {
-       urlSig += '?project_id=' + selectedProject;
-       urlSum += '?project_id=' + selectedProject;
-    }
+    let urlSig = `/api/alerts?state=${selectedState || ''}&district=${selectedDistrict || ''}`;
+      let urlSum = '/api/monitoring-summary';
+      if (selectedProject) {
+         urlSum += '?project_id=' + selectedProject;
+      }
     Promise.all([
       fetch(urlSig).then(r=>r.json()),
       fetch(urlSum).then(r=>r.json())
     ]).then(([sigRes, sumRes]) => {
-      if (sigRes.status === 'success') setMonitoringSignals(sigRes.data);
-      else setMonitoringError(true);
+      if (sigRes.status === 'success') {
+          setMonitoringSignals(sigRes.alerts || []);
+          setAlertData(sigRes);
+          setVisibleCount(6);
+        } else {
+          setMonitoringError(true);
+        }
       if (sumRes.status === 'success') setMonitoringSummary(sumRes.data);
       else setMonitoringError(true);
       setMonitoringLoading(false);
@@ -297,81 +303,102 @@ export default function App() {
 )}
 </div></section>
       <section className="content-width intelligence-section" id="alerts">
-        <div className="alerts-layout">
-          <div className="alerts-column">
-            <div className="section-heading compact">
-              <div>
-                <div className="eyebrow"><span /> OFFICIAL SOURCE DATA</div>
-                <h2>Watershed Monitoring Signals</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            <aside className="trend-panel" id="history" style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '15px 25px', gap: '20px', flexWrap: 'wrap' }}>
+              <div className="trend-top" style={{ flex: '1', minWidth: '200px' }}>
+                <div>
+                  <span className="card-kicker">OFFICIAL PROJECT MONITORING</span>
+                  <h3>{monitoringSummary?.project_name || 'Monitoring Overview'}</h3>
+                </div>
               </div>
-            </div>
-            
-            <div className="alert-list">
               {monitoringLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>Loading official monitoring data...</div>
+                 <div style={{ padding: '20px', textAlign: 'center', color: '#6b7c73' }}>Loading...</div>
               ) : monitoringError ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f' }}>Official monitoring data is temporarily unavailable.</div>
-              ) : monitoringSignals.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>No recent official implementation records available for this selection.</div>
-              ) : (
-                monitoringSignals.map((signal) => (
-                  <article className="alert-card" key={signal.id}>
-                    <div className="severity-bar info" style={{ backgroundColor: '#168a4c' }} />
-                    <div className="alert-content">
-                      <div className="alert-meta">
-                        <span className="badge info" style={{ backgroundColor: '#eef7f2', color: '#168a4c' }}>{signal.source}</span>
-                        <time>{signal.time}</time>
+                 <div style={{ padding: '20px', textAlign: 'center', color: '#ff6b5f' }}>Data unavailable.</div>
+              ) : monitoringSummary ? (
+                <>
+                  <div className="trend-value" style={{ flex: '1', minWidth: '150px' }}>
+                    <strong>{monitoringSummary.total_geotags}</strong>
+                    <span style={{ marginTop: '5px', fontSize: '12px' }}>official implementation<br />records geotagged</span>
+                  </div>
+                  
+                  <div style={{ flex: '2', minWidth: '300px', display: 'flex', gap: '15px', flexWrap: 'wrap', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '20px' }}>
+                    {monitoringSummary.activities.slice(0,4).map((act, i) => (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', padding: '5px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '13px' }}>
+                        <span style={{ color: '#88a696', fontWeight: '500', textTransform: 'capitalize', fontSize: '11px' }}>{act.name}</span>
+                        <span style={{ color: '#fff', fontWeight: '700' }}>{act.count}</span>
                       </div>
-                      <h3 style={{ textTransform: 'capitalize' }}>{signal.title}</h3>
-                      <p>{signal.description}</p>
-                      <div className="alert-footer">
-                        <span><MapPin size={14} /> {signal.location}</span>
-                        <strong style={{ color: '#168a4c' }}>Status: {signal.confidence}</strong>
+                    ))}
+                    {monitoringSummary.activities.length === 0 && <div style={{ fontSize: '12px', color: '#6b7c73' }}>No activities recorded.</div>}
+                  </div>
+                </>
+              ) : null}
+            </aside>
+            <div className="alerts-column" style={{ width: '100%' }}>
+            <div className="section-heading compact">
+                <div>
+                  <div className="eyebrow"><span /> OFFICIAL DISASTER ALERTS</div>
+                  <h2>Early Warning &amp; Risk Alerts</h2>
+                </div>
+              </div>
+              
+              {alertData && alertData.summary && (
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px', padding: '15px', backgroundColor: '#eef7f2', borderRadius: '8px', border: '1px solid #d8e8df', fontSize: '13px' }}>
+                  <strong>Active Alerts: {alertData.summary.active}</strong>
+                  <span>High Priority: <strong style={{color: '#df4444'}}>{alertData.summary.high_priority}</strong></span>
+                  <span>Flash Flood: <strong>{alertData.summary.flash_flood}</strong></span>
+                  <span>Heavy Rainfall: <strong>{alertData.summary.heavy_rainfall}</strong></span>
+                  <span>Drought/Water Stress: <strong>{alertData.summary.drought}</strong></span>
+                  <div style={{ width: '100%', fontSize: '11px', color: '#687d72', marginTop: '5px' }}>
+                    {alertData.is_live ? 'Live Data from Source' : 'Last successfully retrieved data shown'}
+                  </div>
+                </div>
+              )}
+
+              <div className="alert-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
+                {monitoringLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>Loading official alerts...</div>
+                ) : monitoringError ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f' }}>Official alert source currently unavailable.</div>
+                ) : monitoringSignals.length === 0 ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>No active official disaster alerts for the selected area.</div>
+                ) : (
+                  monitoringSignals.slice(0, visibleCount).map((signal, idx) => (
+                    <article className="alert-card" key={signal.id || idx}>
+                      <div className="severity-bar info" style={{ backgroundColor: signal.color === 'red' ? '#df4444' : signal.color === 'orange' ? '#f59e0b' : signal.color === 'yellow' ? '#fde047' : '#168a4c' }} />
+                      <div className="alert-content">
+                        <div className="alert-meta">
+                          <span className="badge info" style={{ backgroundColor: '#eef7f2', color: '#168a4c' }}>Source: {signal.source}</span>
+                          <time>Issued: {signal.time}</time>
+                        </div>
+                        <h3 style={{ textTransform: 'capitalize' }}>{signal.severity} - {signal.title}</h3>
+                        <p>{signal.description}</p>
+                        <div className="alert-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '12px' }}><MapPin size={14} /> Affected: {signal.location}</span>
+                          {signal.valid_until && <span style={{ fontSize: '12px', color: '#687d72' }}>Valid until: {signal.valid_until}</span>}
+                          
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                            <button onClick={() => {
+                                if (signal.centroid) {
+                                  window.location.hash = 'map';
+                                }
+                            }} className="button button-primary" style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={12}/> View on Map</button>
+                            <a href="https://sachet.ndma.gov.in" target="_blank" className="button button-secondary" style={{ padding: '6px 12px', fontSize: '11px', backgroundColor: '#eee', color: '#333' }}>View Source</a>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))
+                    </article>
+                  ))
+                )}
+              </div>
+              {monitoringSignals && monitoringSignals.length > visibleCount && (
+                  <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                    <button onClick={() => setVisibleCount(prev => prev + 6)} className="button button-primary" style={{ padding: '10px 20px', borderRadius: '20px' }}>Load More Alerts ({monitoringSignals.length - visibleCount} remaining)</button>
+                  </div>
               )}
             </div>
-          </div>
-          
-          <aside className="trend-panel" id="history">
-            <div className="trend-top">
-              <div>
-                <span className="card-kicker">OFFICIAL PROJECT MONITORING</span>
-                <h3>{monitoringSummary?.project_name || 'Monitoring Overview'}</h3>
-              </div>
+            
             </div>
-            {monitoringLoading ? (
-               <div style={{ padding: '40px', textAlign: 'center', color: '#6b7c73' }}>Loading...</div>
-            ) : monitoringError ? (
-               <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f' }}>Data unavailable.</div>
-            ) : monitoringSummary ? (
-              <>
-                <div className="trend-value">
-                  <strong>{monitoringSummary.total_geotags}</strong>
-                  <span style={{ marginTop: '8px' }}>official implementation<br />records geotagged</span>
-                </div>
-                
-                <div style={{ padding: '24px 20px' }}>
-                  <h4 style={{ fontSize: '11px', color: '#6b7c73', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Implementation Activities</h4>
-                  {monitoringSummary.activities.map((act, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5edf1', fontSize: '13px' }}>
-                      <span style={{ color: '#112c3b', fontWeight: '500', textTransform: 'capitalize' }}>{act.name}</span>
-                      <span style={{ color: '#168a4c', fontWeight: '700' }}>{act.count}</span>
-                    </div>
-                  ))}
-                  {monitoringSummary.activities.length === 0 && <div style={{ fontSize: '12px', color: '#6b7c73' }}>No activities recorded.</div>}
-                </div>
-                
-                <div className="trend-insight" style={{ marginTop: 'auto', borderTop: '1px solid #e5edf1', padding: '16px 20px', background: '#f8faf9', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
-                  <ShieldCheck size={17} style={{ color: '#168a4c', marginTop: '2px' }} />
-                  <span style={{ color: '#526f5c' }}><strong style={{ color: '#112c3b' }}>Official Source</strong> &middot; Retrieved directly from WDC-PMKSY 2.0 implementation data.</span>
-                </div>
-              </>
-            ) : null}
-          </aside>
-        </div>
       </section>
       <section className="regions-section"><div className="content-width"><div className="section-heading"><div><div className="eyebrow"><span /> PRIORITY COVERAGE</div><h2>Regional monitoring</h2><p>Focused observation areas with the most recent water conditions.</p></div><a href="#map" className="button button-secondary" onClick={() => flash('Navigating to India Watershed Explorer')}><Globe2 size={16} /> View all regions</a></div>{regionalError ? (
   <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b5f', background: '#fff0f0', borderRadius: '8px', border: '1px solid #fad2d2', gridColumn: '1 / -1' }}>

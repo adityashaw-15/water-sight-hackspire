@@ -40,7 +40,7 @@ function UserEvidencePopupContent({ feature }) {
       
       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #eee', fontSize: '11px', color: '#888', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span><strong>Source:</strong> Watersight field evidence</span>
-        <a href={`/satellite-analysis?lat=${feature.geometry?.coordinates[1]}&lng=${feature.geometry?.coordinates[0]}&img=${encodeURIComponent(p.image_url || '')}`} target="_blank" className="button button-primary" style={{ padding: '4px 8px', fontSize: '10px', textDecoration: 'none' }}>Analyze Satellite Data</a>
+        <a href={`/satellite-analysis?lat=${feature.geometry?.coordinates[1]}&lng=${feature.geometry?.coordinates[0]}&img=${encodeURIComponent(p.image_url || '')}`} target="_blank" className="button button-primary satellite-btn" style={{ padding: '4px 8px', fontSize: '10px', textDecoration: 'none' }}>Analyze Satellite Data</a>
       </div>
     </div>
   );

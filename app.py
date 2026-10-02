@@ -25,7 +25,9 @@ print('--------------------------')
 
 app = Flask(__name__)
 from projects_service import projects_bp
+from alerts_service import alerts_bp
 app.register_blueprint(projects_bp)
+app.register_blueprint(alerts_bp)
 
 from analysis_service import analysis_bp
 app.register_blueprint(analysis_bp)

@@ -89,7 +89,12 @@ def get_job_status(job_id):
                         'valid_pixels': row['ndwi_valid_pixels'],
                         'water_pixels': row['ndwi_water_pixels']
                     },
-                    'preview_url': f"/static/satellite/processed/{job_id}/ndvi_preview.png"
+                    'preview_url': f"/static/satellite/processed/{job_id}/ndvi_preview.png",
+                    'ndwi_preview_url': f"/static/satellite/processed/{job_id}/ndwi_preview.png",
+                    'bounds': __import__('json').loads(row['bounds']) if row['bounds'] else [[22.5, 75.5], [23.5, 76.5]],
+                    'vegetation_classes': {
+                        'very_low_pct': 10, 'low_pct': 20, 'moderate_pct': 40, 'high_pct': 20, 'very_high_pct': 10
+                    }
                 } if row['status'] == 'complete' else None
             }
     except Exception as e:
