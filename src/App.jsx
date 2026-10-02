@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, BellRing, CalendarDays, Download, Droplets, Expand, Gauge, Globe2, Layers3, MapPin,
-  Menu, MoreHorizontal, Navigation, RefreshCw, Satellite, Search, ShieldCheck, X, Camera
+  Menu, MoreHorizontal, Navigation, RefreshCw, Satellite, Search, ShieldCheck, X, Camera, Power
 } from 'lucide-react';
 import { alerts, chartValues, navigation, regions, sources, hierarchyData } from './constants';
 import { chartPoints } from './utils/helpers';
@@ -97,7 +97,7 @@ export default function App() {
   const [fieldEvidence, setFieldEvidence] = useState(null);
   const [lastUpdated, setLastUpdated] = useState('27 Sep 2026, 10:42 IST');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [notice, setNotice] = useState('Demo GIS layers ready · prototype monitoring environment');
+  const [notice, setNotice] = useState('');
   const [dataMode, setDataMode] = useState('official');
 
   React.useEffect(() => {
@@ -259,7 +259,7 @@ export default function App() {
                 )}
                 <span>{window.CURRENT_USER.name}</span>
               </a>
-              <a href="/logout" className="nav-interactive auth-btn auth-btn-muted" style={{ textDecoration: 'none' }}>Logout</a>
+              <a href="/logout" className="logout-power-btn" aria-label="Logout" title="Logout"><Power size={18} strokeWidth={2.5} /></a>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginRight: '15px', fontSize: '13px' }}>
@@ -267,12 +267,12 @@ export default function App() {
               <a href="/register" className="nav-interactive auth-btn auth-btn-accent" style={{ textDecoration: 'none' }}>Register</a>
             </div>
           )}
-<button className="system-button nav-interactive" type="button" onClick={refreshSystem}><span className="live-dot" />{isRefreshing ? 'Refreshing data...' : 'Refresh Data'}</button><button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label="Toggle navigation" title="Toggle navigation">{menuOpen ? <X size={19} /> : <Menu size={20} />}</button></div></div></header>
+<button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label="Toggle navigation" title="Toggle navigation">{menuOpen ? <X size={19} /> : <Menu size={20} />}</button></div></div></header>
     <main>
       <section className="overview-section content-width" id="overview"><div className="intro-row"><div className="hero-anim-wrapper">  <div className="hero-topo-bg"></div>  <div className="eyebrow"><span></span> WATERSHED INTELLIGENCE</div>  <h1>    <span className="hero-scan-line"></span>    See the Watershed. Understand the Change.    <div className="hero-location-pulse"></div>  </h1>  <p className="intro-copy">A platform combining geo-coded field evidence, satellite observations and GIS layers for Indian watershed development monitoring.</p></div><div className="intro-actions"><button className="button button-secondary" type="button" onClick={() => setShowUploadModal(true)}><Camera size={16} /> Upload Evidence</button><button className="button button-secondary" type="button" onClick={exportCsv}><Download size={16} /> Export data</button><button className="button button-primary" type="button" onClick={refreshSystem}><RefreshCw size={16} className={isRefreshing ? 'spin' : ''} /> Refresh Data</button></div></div>
       <WatershedHeroVisual />
       <div className="metrics-grid"><article className="metric-card"><div className="metric-icon blue"><Droplets size={22} /></div><div><span>Watershed area</span><strong>48.6 km²</strong><small className="up">12 <em>water bodies</em></small></div><Activity className="metric-spark" size={48} /></article><article className="metric-card"><div className="metric-icon red"><AlertTriangle size={22} /></div><div><span>Watershed interventions</span><strong>18</strong><small className="up">11 <em>completed</em></small></div><BellRing className="metric-spark red-stroke" size={45} /></article><article className="metric-card"><div className="metric-icon teal"><MapPin size={22} /></div><div><span>Geo-coded images</span><strong>24</strong><small className="neutral">6 <em>villages</em></small></div><Globe2 className="metric-spark" size={48} /></article></div></section>
-      <section className="map-section" id="map"><div className="content-width"><div className="section-heading map-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED EXPLORER</div><h2>India-focused watershed GIS</h2><p>Select a watershed to inspect its local evidence, drainage and interventions.</p></div><div className="map-update"><span className="live-dot" /> {notice}</div></div><div className="watershed-selectors">
+      <section className="map-section" id="map"><div className="content-width"><div className="section-heading map-heading"><div><div className="eyebrow"><span /> INDIA WATERSHED EXPLORER</div><h2>India-focused watershed GIS</h2><p>Select a watershed to inspect its local evidence, drainage and interventions.</p></div>{notice && <div className="map-update"><span className="live-dot" /> {notice}</div>}</div><div className="watershed-selectors">
         <label>Country<select value="India" disabled><option>India</option></select></label>
         <label>State<select value={selectedState} onChange={(event) => { setSelectedState(event.target.value); setSelectedDistrict(''); setSelectedProject(''); setMapReset((value) => value + 1); }}>
           <option value="">Select State</option>
@@ -495,3 +495,4 @@ export default function App() {
     <footer className="site-footer"><div className="content-width footer-inner"><div><a className="brand footer-brand" href="#overview"><span className="brand-logo-frame footer-logo-frame"><img className="brand-logo-image" src="/watersight-logo.png" alt="WaterSight" /></span><strong>WaterSight</strong></a><p>Geospatial intelligence for watershed development and evidence-led planning.</p></div><div className="footer-links"><a href="#overview">About</a><a href="#map">Methodology</a><a href="#data-sources">Data policy</a><a href="#data-sources">Integration</a></div></div></footer>
   </div>;
 }
+
