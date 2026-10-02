@@ -376,15 +376,17 @@ main,.site-footer { position:relative; z-index:1; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
   background-color: transparent;
   color: #ef4444;
   border: 2px solid #ef4444;
   transition: all 0.15s ease-in-out;
   text-decoration: none;
   margin-left: 10px;
+  font-weight: 600;
+  font-size: 14px;
 }
 .logout-power-btn:hover, .logout-power-btn:active {
   background-color: #ef4444;

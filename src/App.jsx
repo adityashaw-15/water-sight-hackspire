@@ -259,7 +259,7 @@ export default function App() {
                 )}
                 <span>{window.CURRENT_USER.name}</span>
               </a>
-              <a href="/logout" className="logout-power-btn" aria-label="Logout" title="Logout"><Power size={18} strokeWidth={2.5} /></a>
+              <a href="/logout" className="logout-power-btn" aria-label="Logout" title="Logout"><Power size={16} strokeWidth={2.5} /><span>Log out</span></a>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginRight: '15px', fontSize: '13px' }}>
