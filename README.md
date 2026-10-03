@@ -45,3 +45,6 @@ This application supports real Google OAuth 2.0 / OpenID Connect login.
 
 ## 🧗 Challenges We Ran Into
 Our main challenge was integrating a heavy PyTorch image classification model (MobileNetV3) into a synchronous Flask backend without freezing the UI. Additionally, handling massive geospatial datasets and successfully overriding React Leaflet events to ensure the AI blocked invalid screenshots before triggering satellite analysis required extensive debugging.
+
+## ☁️ Cloud Deployment (Render)
+We utilized **Render** for our cloud hosting because it provided the most seamless, friction-free CI/CD pipeline for our architecture. Render allowed us to effortlessly deploy our heavy Python Flask backend and static React assets in a unified container, bypassing the strict serverless constraints of other platforms while ensuring reliable performance for our AI processing.
