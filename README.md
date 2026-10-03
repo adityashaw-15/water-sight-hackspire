@@ -42,3 +42,6 @@ This application supports real Google OAuth 2.0 / OpenID Connect login.
    ```
 7. Start the Flask application: `python app.py`
 8. Open `http://localhost:5000/login` to authenticate!
+
+## 🧗 Challenges We Ran Into
+Our main challenge was integrating a heavy PyTorch image classification model (MobileNetV3) into a synchronous Flask backend without freezing the UI. Additionally, handling massive geospatial datasets and successfully overriding React Leaflet events to ensure the AI blocked invalid screenshots before triggering satellite analysis required extensive debugging.
